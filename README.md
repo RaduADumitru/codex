@@ -5,6 +5,7 @@ As of now, the repo contains a Java Spring Boot Maven app for the API, and a dum
 
 `arangorestore --server.username {username} --server.password {password} --server.database dex --create-database true --input-directory "dump"`
 
+Connection details can be configured in `codex/src/main/java/org/example/codex/CodexConfiguration.java `
 ## Current API endpoints:
 * `/lexeme/levenshtein`: POST - parameters `word`, `dist` - returns all words with a Levenshtein distance of maximum `dist` from `word`
 * `/lexeme/regex`: POST - parameter `regex` - returns all words matching the Regex expression `regex`
