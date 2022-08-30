@@ -5,7 +5,7 @@ As of now, the repo contains a Spring Boot app for the API, and a dump of the [D
 
 `arangorestore --server.username {username} --server.password {password} --server.database dex --create-database true --input-directory "dump"`
 
-## API endpoints:
+## Current API endpoints:
 * `/lexeme/levenshtein`: POST - parameters `word`, `dist` - returns all words with a Levenshtein distance of maximum `dist` from `word`
 * `/lexeme/regex`: POST - parameter `regex` - returns all words matching the Regex expression `regex`
 ## TODO: 
