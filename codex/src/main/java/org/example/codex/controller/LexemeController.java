@@ -28,6 +28,6 @@ public class LexemeController {
 
     @PostMapping("/lexeme/meanings")
     Iterable<String> getMeanings(@RequestBody MeaningsForm meaningsForm) {
-        return repository.getMeanings(meaningsForm.getName(), meaningsForm.getType());
+        return repository.getMeanings(meaningsForm.getWord(), meaningsForm.getType());
     }
 }

@@ -1,23 +1,23 @@
 package org.example.codex.forms;
 
 public class MeaningsForm {
-    private String name;
+    private String word;
     private Integer type;
 
-    public MeaningsForm(String name, Integer type) {
-        this.name = name;
+    public MeaningsForm(String word, Integer type) {
+        this.word = word;
         this.type = type;
     }
 
     public MeaningsForm() {
     }
 
-    public String getName() {
-        return name;
+    public String getWord() {
+        return word;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setWord(String word) {
+        this.word = word;
     }
 
     public Integer getType() {
