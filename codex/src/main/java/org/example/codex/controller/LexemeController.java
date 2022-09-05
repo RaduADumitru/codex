@@ -1,6 +1,7 @@
 package org.example.codex.controller;
 
 import org.example.codex.forms.LevenshteinForm;
+import org.example.codex.forms.MeaningsForm;
 import org.example.codex.forms.RegexForm;
 import org.example.codex.repository.LexemeRepository;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,5 +24,10 @@ public class LexemeController {
     @PostMapping("/lexeme/regex")
     Iterable<String> getWithRegex(@RequestBody RegexForm regexForm) {
         return repository.getWithRegex(regexForm.getRegex());
+    }
+
+    @PostMapping("/lexeme/meanings")
+    Iterable<String> getMeanings(@RequestBody MeaningsForm meaningsForm) {
+        return repository.getMeanings(meaningsForm.getName(), meaningsForm.getType());
     }
 }
