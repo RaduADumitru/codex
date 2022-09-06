@@ -1,4 +1,0 @@
-
-COPY . .
-
-RUN mvn clean package -Dmaven.test.skip=true spring-boot:repackage
