@@ -14,8 +14,9 @@ services:
     image: 'arangodb:3.9.2'
     container_name: db
     environment:
-      - ARANGO_NO_AUTH=1
       - ARANGO_ROOT_PASSWORD=openSesame
     volumes:
       - ./dump:/dump
-    command: bash -c "arangorestore --input-directory "/dump" --create-collection true --create-database true --overwrite true --server.username "root" --server.password "openSesame" --server.database "dex""
+    command: sh -c "arangorestore --input-directory "/dump" --create-collection true --create-database true --overwrite true --server.username "root" --server.password "openSesame" --server.database "dex""
+    expose:
+      - "8529"
