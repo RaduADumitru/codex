@@ -9,9 +9,9 @@ services:
       - ARANGO_ROOT_PASSWORD=openSesame
     volumes:
       - ./dump:/dump 
-    expose:
-      - "8529"
-    command: sh -c "arangorestore --input-directory '/dump' --create-collection true --create-database true --overwrite true --server.username 'root' --server.password 'openSesame' --server.database 'dex'"
+    ports:
+      - "8529:8529"
+    command: sh -c "netstat -alpnt && arangorestore --input-directory '/dump' --create-collection true --create-database true --overwrite true --server.username 'root' --server.password 'openSesame' --server.database 'dex'"
   app:
     build:
       context: ./codex
