@@ -1,10 +1,6 @@
 FROM arangodb:3.9.2
-ADD ../../dump/ /dump/
-RUN "sudo docker exec arango-tsv arangorestore \
---input-directory "/dump" \
---create-collection true \
---create-database true \
---overwrite true \
---server.username "root" \
---server.password "openSesame" \
---server.database "dex" "
+ADD ./dump/ /dump/
+ADD entrypoint.sh ./entrypoint.sh
+ADD server.conf /server.conf
+RUN chmod +x entrypoint.sh
+RUN ./entrypoint.sh

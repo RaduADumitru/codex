@@ -1,18 +1,27 @@
 version: '2'
 
+# Separation of concerns
+# Separation of lifecycles / lifecycle awareness
 services:
+# comment
   db:
-    image: 'arangodb:3.9.2'
+    ports:
+      - 8529:8529
+    build:
+      context: ./docker/database
     container_name: db
     environment:
       - ARANGO_ROOT_USER=root
+      # Docker secrets
+      # https://docs.docker.com/engine/swarm/secrets/
       - ARANGO_ROOT_PASSWORD=openSesame
     volumes:
       - ./dump:/dump 
-    ports:
-      - "8529:8529"
-    command: sh -c "netstat -alpnt && arangorestore --input-directory '/dump' --create-collection true --create-database true --overwrite true --server.username 'root' --server.password 'openSesame' --server.database 'dex'"
+#    command: sh -c "netstat -alpnt && arangorestore --input-directory '/dump' --create-#collection true --create-database true --overwrite true --server.endpoint 'tcp://db:8529' --#server.username 'root' --server.password 'openSesame' --server.database 'dex'"
+    networks:
+      - common-net
   app:
+  # application.config/properties
     build:
       context: ./codex
     container_name: app
@@ -20,5 +29,11 @@ services:
       - db
     ports:
       - "8080:8080"  
+    networks:
+      - common-net
+    restart: on-failure
+networks:
+  common-net: {}
+  default:
           
 
