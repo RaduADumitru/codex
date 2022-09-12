@@ -48,69 +48,36 @@ public interface LexemeRepository extends ArangoRepository<Lexeme, String> {
 """)
     Iterable<String> getMeanings(@Param("word") String word, @Param("type") Integer type);
     @Query("""
-// Get Synonyms of lexeme
+// Get Lexemes with a certain relationship to input (synonyms, anotnyms, diminutives, augmentatives)
 //start from vertices with same form as word parameter
-//1) Get all words that have selected word as synonym in meanings
+//Get all words that have selected word as synonym in meanings
 LET start_vertices = (
     for l in Lexeme
-    filter l.formNoAccent like "alb"
+    filter l.@form like @word
     return l
 )
-//Relationship edge connects tree to meanings with desired relationship, those meanings will be had by the words we are looking for
-//path: Lexeme <- Entry <- Tree <[Relationship with type]- Meaning <- MeaningTreeRoot <- Tree <- Entry <- Lexeme\s
-LET relation_meanings = (
+// Get all synonyms of selected word in article
+LET meaning_roots = (
 for start in start_vertices
-    for v, e, p in 1..3 inbound start GRAPH Synonyms
-    filter p.edges[2].type == 1
+    for v, e, p in 1..3 inbound start GRAPH LexemeMeaningRoot
+    return last(p.vertices)
+    )
+//Get meanings with given relation to another meaning tree
+LET relation_meaning = (
+    for root in meaning_roots
+        for v, e, p in 1..10 outbound root EdgeMeaningMeaning, EdgeRelation
+        FILTER last(p.edges).type == @relationType
+        //Eliminate synonyms/antoynms etc of compound expressions containing original word; different meanings
+        //Position of penultimate element - meaning with given relationship
+        LET pos = length(p.vertices) - 2
+        //5 - meaning type of compound expressions
+        filter p.vertices[pos].type != 5
         return last(p.vertices)
 )
-//Get to roots of meaning trees: parent -> child: roots will be end vertices traversing inward
-LET meaning_roots = (
-    for meaning in relation_meanings
-        for v, e, p in 1..10 inbound meaning GRAPH MeaningGraph
-        //Get only paths that have ended
-        filter length(for vv in inbound v Graph MeaningGraph limit 1 return 1) == 0
-            return last(p.vertices)
-)
-//go from roots to corresponding lexemes: Meaning -> Tree -> Entry -> Lexeme
-LET end_lexemes_1 = (
-for root in meaning_roots
-        for v, e, p in 1..3 outbound root GRAPH LexemeMeaningRoot
-        //Get only paths that have ended
-        filter length(for vv in outbound v Graph LexemeMeaningRoot limit 1 return 1) == 0
-            return last(p.vertices)
-        )
-        //2) Get all synonyms of selected word in article
-        LET meaning_roots_2 = (
-        for start in start_vertices
-            for v, e, p in 1..3 inbound start GRAPH LexemeMeaningRoot
-            return last(p.vertices)
-            )
-        LET new_meaning = (
-            for root in meaning_roots_2
-                for v, e, p in 1..10 outbound root EdgeMeaningMeaning, EdgeRelation
-                FILTER last(p.edges).type == 1
-                //Eliminate synonyms of compound expressions containing original word
-                LET pos = length(p.vertices) - 2
-                filter p.vertices[pos].type != 5
-                return last(p.vertices)
-        )
-        let end_lexemes_2 = (
-        for meaning in new_meaning
-            for v, e, p in 1..3 outbound meaning GRAPH LexemeMeaningRoot
-            return last(p.vertices)
-        )
-        LET forms_1 = (
-        for l in end_lexemes_1
-        filter l.formUtf8General != null
-        return l.formUtf8General
-        )
-        LET forms_2 = (
-        for l in end_lexemes_2
-        filter l.formUtf8General != null
-        return l.formUtf8General
-        )
-        RETURN UNION_DISTINCT(forms_1, forms_2)
+for meaning in relation_meaning
+    for v, e, p in 1..3 outbound meaning GRAPH LexemeMeaningRoot
+    filter last(p.vertices).@form != null
+    return distinct last(p.vertices).@form
 """)
-    Iterable<String> getLexemesWithRelation(@Param("word") String word, @Param("relationType") Integer type, @Param("form") String form);
+    Iterable<String> getLexemesWithRelation(@Param("word") String word, @Param("relationType") Integer relationType, @Param("form") String form);
 }
