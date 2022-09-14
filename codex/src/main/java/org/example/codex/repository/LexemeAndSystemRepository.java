@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface LexemeRepository extends ArangoRepository<Lexeme, String> {
+public interface LexemeAndSystemRepository extends ArangoRepository<Lexeme, String> {
     @Query("""
                   // returns all words at a Levenshtein distance maximum of @dist from @word
                   for lexeme in Lexeme

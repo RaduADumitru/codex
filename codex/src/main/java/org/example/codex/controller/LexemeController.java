@@ -4,17 +4,16 @@ import org.example.codex.forms.LevenshteinForm;
 import org.example.codex.forms.MeaningsForm;
 import org.example.codex.forms.RegexForm;
 import org.example.codex.forms.RelationForm;
-import org.example.codex.repository.LexemeRepository;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.example.codex.repository.LexemeAndSystemRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class LexemeController {
-    private final LexemeRepository repository;
+    private final LexemeAndSystemRepository repository;
 
-    public LexemeController(LexemeRepository repository) {
+    public LexemeController(LexemeAndSystemRepository repository) {
         this.repository = repository;
     }
 
