@@ -21,23 +21,23 @@ public class SystemController {
     public SystemController(LexemeAndSystemRepository repository) {
         this.repository = repository;
     }
-    @GetMapping("/system/collections")
+    @GetMapping("/system/schema/collections")
     Iterable<String> getCollections() {
         return repository.getCollections();
     }
-    @PostMapping("/system/key_types")
+    @PostMapping("/system/collection/key_types")
     Iterable<KeyTypeResponse> getKeyTypes(@RequestBody CollectionForm collectionForm) {
         return repository.getKeyTypes(collectionForm.getCollection());
     }
-    @PostMapping("/system/is_edge_collection")
+    @PostMapping("/system/collection/is_edge_collection")
     Boolean isEdgeCollection(@RequestBody CollectionForm collectionForm) {
         return repository.isEdgeCollection(collectionForm.getCollection());
     }
-    @PostMapping("/system/edge_relations")
+    @PostMapping("/system/collection/edge_relations")
     List<EdgeResponse> getEdgeRelations(@RequestBody CollectionForm collectionForm) {
         return repository.getEdgeRelations(collectionForm.getCollection());
     }
-    @GetMapping("system/key_types_all")
+    @GetMapping("system/schema/key_types_all")
     HashMap<String, List<KeyTypeResponse>> getKeyTypesAll() {
         Iterable<String> collections = repository.getCollections();
         HashMap<String, List<KeyTypeResponse>> keyTypeMap = new HashMap<>();
@@ -47,7 +47,7 @@ public class SystemController {
         }
         return keyTypeMap;
     }
-    @GetMapping("system/edge_relations_all")
+    @GetMapping("system/schema/edge_relations_all")
     HashMap<String, List<EdgeResponse>> getEdgeRelationsAll() {
         HashMap<String, List<EdgeResponse>> edgeRelationMap = new HashMap<>();
         Iterable<String> collections = repository.getCollections();
@@ -62,7 +62,7 @@ public class SystemController {
         }
         return edgeRelationMap;
     }
-    @GetMapping("system/schema")
+    @GetMapping("system/schema/schema")
     Schema getSchema() {
         Schema schema = new Schema();
         schema.setKeyTypeMap(getKeyTypesAll());

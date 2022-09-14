@@ -74,8 +74,4 @@ public class LexemeController {
         //Else exception
         else return null;
     }
-//    @GetMapping("/system/collections")
-//    Iterable<String> getCollections() {
-//        return repository.getCollections();
-//    }
 }
