@@ -3,7 +3,11 @@ package org.example.codex.repository;
 import com.arangodb.springframework.annotation.Query;
 import com.arangodb.springframework.repository.ArangoRepository;
 import org.example.codex.model.Lexeme;
+import org.example.codex.responses.EdgeResponse;
+import org.example.codex.responses.KeyTypeResponse;
 import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 public interface LexemeRepository extends ArangoRepository<Lexeme, String> {
     @Query("""
@@ -85,4 +89,41 @@ for meaning in relation_meaning
     return distinct last(p.vertices).@form
 """)
     Iterable<String> getLexemesWithRelation(@Param("word") String word, @Param("relationType") Integer relationType, @Param("form") String form);
+    @Query("""
+for col in collections()
+filter not starts_with(col.name, "_") //eliminate system collections
+return col.name
+""")
+    Iterable<String> getCollections();
+    @Query("""
+let col_keys_type = (
+for obj in @@col
+for key in keys(obj)
+return {"key": key, "type": typename(obj[key])}
+)
+let pairs = (
+for pair in col_keys_type
+return distinct pair
+)
+for pair in pairs
+sort pair.key, pair.type
+return pair
+""")
+    List<KeyTypeResponse> getKeyTypes(@Param("@col") String collection);
+    @Query("""
+//Get a document from collection, and see if it has _from attribute, exclusive to edges
+for obj in @@col
+limit 1
+let atts = attributes(obj)
+return "_from" in atts
+""")
+    boolean isEdgeCollection(@Param("@col") String collection);
+    @Query("""
+for obj in @@col
+// _from and _to are in format Collection/id : split string by /, collection name is first element
+let from_collection = split(obj._from, "/")[0]
+let to_collection = split(obj._to, "/")[0]
+return distinct {"from": from_collection, "to": to_collection}
+""")
+    List<EdgeResponse> getEdgeRelations(@Param("@col") String collection);
 }

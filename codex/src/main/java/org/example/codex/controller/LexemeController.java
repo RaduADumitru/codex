@@ -5,6 +5,7 @@ import org.example.codex.forms.MeaningsForm;
 import org.example.codex.forms.RegexForm;
 import org.example.codex.forms.RelationForm;
 import org.example.codex.repository.LexemeRepository;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,4 +75,8 @@ public class LexemeController {
         //Else exception
         else return null;
     }
+//    @GetMapping("/system/collections")
+//    Iterable<String> getCollections() {
+//        return repository.getCollections();
+//    }
 }
