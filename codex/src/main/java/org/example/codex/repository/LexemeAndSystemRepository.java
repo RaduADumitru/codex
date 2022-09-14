@@ -44,13 +44,13 @@ public interface LexemeAndSystemRepository extends ArangoRepository<Lexeme, Stri
     //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
     LET meaning_tree_roots = (
     for start in start_vertex
-        for v, e, p in 1..3 inbound start GRAPH LexemeMeaningRoot
+        for v, e, p in 1..3 inbound start EdgeEntryLexeme, EdgeTreeEntry, EdgeMeaningTree
         //meaning root has no parent
         filter p.vertices[3].parentId == 0
         return p.vertices[3])
     //Traverse meaning tree (parent -> child), returning all meanings of type given
     for root in meaning_tree_roots
-        for v, e, p in 0..10 outbound root GRAPH MeaningGraph
+        for v, e, p in 0..10 outbound root EdgeMeaningMeaning
         //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
         filter v.type == @type
         filter v.internalRep != null
@@ -68,7 +68,7 @@ LET start_vertices = (
 // Get to roots of meaning trees of input : Lexeme <- Entry <- Tree <- Root
 LET meaning_roots = (
 for start in start_vertices
-    for v, e, p in 1..3 inbound start GRAPH LexemeMeaningRoot
+    for v, e, p in 1..3 inbound start EdgeEntryLexeme, EdgeTreeEntry, EdgeMeaningTree
     return last(p.vertices)
     )
 //meanings with relation to other meaning tree: parent -> child, (if relation exists) child -[relation]> tree
@@ -84,7 +84,7 @@ LET relation_meaning = (
         return last(p.vertices))
 //From tree to lexemes: Tree -> Entry -> Lexeme
 for meaning in relation_meaning
-    for v, e, p in 1..3 outbound meaning GRAPH LexemeMeaningRoot
+    for v, e, p in 1..3 outbound meaning EdgeMeaningTree,  EdgeTreeEntry, EdgeEntryLexeme
     filter last(p.vertices).@form != null
     return distinct last(p.vertices).@form
 """)

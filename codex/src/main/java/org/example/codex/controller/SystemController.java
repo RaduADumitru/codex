@@ -41,7 +41,6 @@ public class SystemController {
     HashMap<String, List<KeyTypeResponse>> getKeyTypesAll() {
         Iterable<String> collections = repository.getCollections();
         HashMap<String, List<KeyTypeResponse>> keyTypeMap = new HashMap<>();
-//        KeyTypeMap keyTypeMap = new KeyTypeMap();
         for (String col:collections) {
             keyTypeMap.put(col, repository.getKeyTypes(col));
         }
