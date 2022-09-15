@@ -30,11 +30,12 @@ services:
     network_mode: host
     
   app:
-  # application.config/properties
+#   application.config/properties
     build:
       context: ./codex
     container_name: app
     depends_on:
+#       - db
       - db_init
     ports:
       - "8080:8080"  

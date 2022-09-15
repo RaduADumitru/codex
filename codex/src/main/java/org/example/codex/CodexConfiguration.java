@@ -3,6 +3,9 @@ package org.example.codex;
 import com.arangodb.ArangoDB;
 import com.arangodb.springframework.annotation.EnableArangoRepositories;
 import com.arangodb.springframework.config.ArangoConfiguration;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -20,5 +23,9 @@ public class CodexConfiguration implements ArangoConfiguration {
     @Override
     public String database() {
         return "dex";
+    }
+    @Bean
+    public ServletWebServerFactory servletWebServerFactory() {
+        return new TomcatServletWebServerFactory("/", 8080);
     }
 }
