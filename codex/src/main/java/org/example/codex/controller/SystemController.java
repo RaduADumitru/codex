@@ -30,7 +30,7 @@ public class SystemController {
         return repository.getKeyTypes(collectionForm.getCollection());
     }
     @PostMapping("/system/collection/is_edge_collection")
-    Boolean isEdgeCollection(@RequestBody CollectionForm collectionForm) {
+    public Boolean isEdgeCollection(@RequestBody CollectionForm collectionForm) {
         return repository.isEdgeCollection(collectionForm.getCollection());
     }
     @PostMapping("/system/collection/edge_relations")
@@ -68,5 +68,8 @@ public class SystemController {
         schema.setEdgeRelationMap(getEdgeRelationsAll());
         return schema;
     }
-
+    @GetMapping("system/hello")
+    String helloWorld() {
+        return "Hello world!";
+    }
 }

@@ -26,6 +26,6 @@ public class CodexConfiguration implements ArangoConfiguration {
     }
     @Bean
     public ServletWebServerFactory servletWebServerFactory() {
-        return new TomcatServletWebServerFactory("/", 8080);
+        return new TomcatServletWebServerFactory();
     }
 }
