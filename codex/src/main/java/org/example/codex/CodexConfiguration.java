@@ -25,10 +25,5 @@ public class CodexConfiguration implements ArangoConfiguration {
     public String database() {
         return "dex";
     }
-//    @Bean
-//    public ServletWebServerFactory servletWebServerFactory() {
-////        return new JettyServletWebServerFactory();
-//        return new TomcatServletWebServerFactory();
-//    }
 
 }

@@ -4,7 +4,7 @@
 FROM maven:3.8.6-openjdk-18 AS build
 COPY src /home/app/src
 COPY pom.xml /home/app
-RUN mvn -f /home/app/pom.xml -Dmaven.test.skip=true clean package
+RUN mvn -f /home/app/pom.xml -Dmaven.test.skip=true clean package spring-boot:repackage
 
 #
 # Package stage

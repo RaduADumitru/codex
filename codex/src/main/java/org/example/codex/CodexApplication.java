@@ -10,16 +10,8 @@ import org.springframework.context.annotation.PropertySource;
 
 import java.util.concurrent.TimeUnit;
 
-//@PropertySource("classpath:application.properties")
-//no extends
 @SpringBootApplication
-//public class CodexApplication extends SpringBootServletInitializer {
 public class CodexApplication {
-//    @Override
-//    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-//        return application.sources(CodexApplication.class);
-//    }
-    //POSSIBLE ERRORS:  tomcat provided or no, spring/tomcat version
     public static void main(String[] args) throws InterruptedException {
         //wait for database startup
         TimeUnit.SECONDS.sleep(5);
