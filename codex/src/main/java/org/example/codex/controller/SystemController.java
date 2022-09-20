@@ -69,7 +69,7 @@ public class SystemController {
         return schema;
     }
     @GetMapping("system/hello")
-    String helloWorld() {
+    public String helloWorld() {
         return "Hello world!";
     }
 }
