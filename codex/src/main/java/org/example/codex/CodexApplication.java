@@ -12,10 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 public class CodexApplication {
-    public static void main(String[] args) throws InterruptedException {
-        //wait for database startup
-//        TimeUnit.SECONDS.sleep(5);
-
+    public static void main(String[] args) {
         SpringApplication.run(CodexApplication.class, args);
     }
 
