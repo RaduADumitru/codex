@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class CodexApplication {
     public static void main(String[] args) throws InterruptedException {
         //wait for database startup
-        TimeUnit.SECONDS.sleep(5);
+//        TimeUnit.SECONDS.sleep(5);
 
         SpringApplication.run(CodexApplication.class, args);
     }
