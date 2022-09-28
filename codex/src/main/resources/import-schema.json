@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "collections": {
+    "Lexeme": {
+      "title": "Lexeme",
+      "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
+      "type": "object",
+      "properties": {
+        "form": {
+          "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
+          "type": "string"
+        },
+        "formNoAccent": {
+          "description": "Base form of the word",
+          "type": "string"
+        },
+        "hyphenatiions": {
+          "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
+          "type": "string"
+        },
+        "pronunciations": {
+          "description": "Comma-separated list of the lexeme's pronunciations. Can be empty.",
+          "type": "string"
+        }
+      },
+      "required": [ "productId" ]
+    },
+    "Entry": {},
+    "Meaning": {}
+  },
+  "edgeCollections": {
+    "MeaningEntry": {},
+    "EntryLexeme": {},
+    "Relation": {}
+  }
+
+}
