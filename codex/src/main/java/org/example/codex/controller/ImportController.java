@@ -3,6 +3,7 @@ package org.example.codex.controller;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import okhttp3.*;
+import org.apache.poi.util.ReplacingInputStream;
 import org.example.codex.util.ImportStatementListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,13 +39,21 @@ public class ImportController {
     ResponseEntity<String> databaseImport() throws IOException, JSQLParserException {
         URL url = new URL("https://dexonline.ro/static/download/dex-database.sql.gz");
         InputStream stream = new GZIPInputStream(url.openStream());
-//        Statements stmt = CCJSqlParserUtil.parseStatements(stream);
+        ReplacingInputStream replacedStream = new ReplacingInputStream(
+                new ReplacingInputStream(
+                new ReplacingInputStream(
+                new ReplacingInputStream(
+                new ReplacingInputStream(
+                        stream, "UNLOCK TABLES;", "/**/"), //Cannot be parsed by JSQLParser, and is redundant
+                        "LOCK", "/*"),
+                        "WRITE;", "*/"),
+                        // Parser does not support semicolons after SQL comments: /* ... */;
+                        "*/;", "*/"),
+                        //Parser does not support backslash escape character, only doubles commas
+                        "\\'", "''");
+        //TODO out of memory
         ImportStatementListener listener = new ImportStatementListener();
-        CCJSqlParserUtil.streamStatements(listener, stream, "UTF-8");
-//        Test
-//        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-//        String line1 = reader.readLine(); //Working
-//        return new ResponseEntity<>(line1, HttpStatus.OK);
+        CCJSqlParserUtil.streamStatements(listener, replacedStream, "UTF-8");
         return new ResponseEntity<>("Import complete", HttpStatus.OK);
     }
 
