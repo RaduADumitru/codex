@@ -44,7 +44,8 @@ public class ImportController {
                 new ReplacingInputStream(
                 new ReplacingInputStream(
                 new ReplacingInputStream(
-                        stream, "UNLOCK TABLES;", "/**/"), //Cannot be parsed by JSQLParser, and is redundant
+                        stream,
+                        "UNLOCK TABLES;", "/**/"), //Cannot be parsed by JSQLParser, and is redundant
                         "LOCK", "/*"),
                         "WRITE;", "*/"),
                         // Parser does not support semicolons after SQL comments: /* ... */;
