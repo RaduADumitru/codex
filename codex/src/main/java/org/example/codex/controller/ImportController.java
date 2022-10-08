@@ -50,7 +50,7 @@ public class ImportController {
 //        return new ResponseEntity<String>(importSchema.get("collections").toString(), HttpStatus.OK);
         URL url = new URL("https://dexonline.ro/static/download/dex-database.sql.gz");
         InputStream stream = new GZIPInputStream(url.openStream());
-        //replace content so that it can be parsed by JSqlParse
+        //replace content so that it can be parsed by JSqlParser
         ReplacingInputStream replacedStream = new ReplacingInputStream(
                 new ReplacingInputStream(
                 new ReplacingInputStream(

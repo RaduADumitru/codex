@@ -53,6 +53,16 @@
             "description": "The ID of the parent meaning in the tree. 0 or NULL means that this meaning is a root.",
             "type": "integer"
           },
+          "type": {
+            "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "treeId": {
+            "description": "Tree to which the meaning belongs.",
+            "type": "integer"
+          },
           "internalRep": {
             "description": "The meaning text.",
             "type": "string"
