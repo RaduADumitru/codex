@@ -15,4 +15,4 @@ EXPOSE 8080
 # application properties, .env file
 # Wait for database startup
 CMD ["sleep", "5"]
-ENTRYPOINT ["java","-jar","/usr/local/lib/codex.jar"]
+ENTRYPOINT ["java", "-jar","/usr/local/lib/codex.jar"]

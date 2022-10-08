@@ -1,37 +1,129 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "collections": {
     "Lexeme": {
-      "title": "Lexeme",
-      "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
-      "type": "object",
-      "properties": {
-        "form": {
-          "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
-          "type": "string"
-        },
-        "formNoAccent": {
-          "description": "Base form of the word",
-          "type": "string"
-        },
-        "hyphenatiions": {
-          "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
-          "type": "string"
-        },
-        "pronunciations": {
-          "description": "Comma-separated list of the lexeme's pronunciations. Can be empty.",
-          "type": "string"
+      "rule": {
+        "title": "Lexeme",
+        "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
+        "type": "object",
+        "properties": {
+          "form": {
+            "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
+            "type": "string"
+          },
+          "formNoAccent": {
+            "description": "Base form of the word",
+            "type": "string"
+          },
+          "hyphenatiions": {
+            "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
+            "type": "string"
+          }
         }
       },
-      "required": [ "productId" ]
+      "level": "strict",
+      "message": "Lexeme could not be inserted!"
     },
-    "Entry": {},
-    "Meaning": {}
+    "Entry": {
+      "rule": {
+      "title": "Entry",
+      "description": "An Entry is a unit of meaning. It is a container for one or more lexemes, definitions, and meaning trees.",
+      "type": "object",
+      "properties": {}
+    },
+      "level": "strict",
+      "message": "Entry could not be inserted!"
+    },
+    "Tree": {
+      "rule": {
+        "title": "Tree",
+        "description": "Trees are containers for meaning hierarchies (see the Meaning table for details).",
+        "type": "object",
+        "properties": {}
+      },
+      "level": "strict",
+      "message": "Tree could not be inserted!"
+    },
+    "Meaning": {
+      "rule": {
+        "title": "Meaning",
+        "description": "Meanings are hierarchical: there are main meanings which can have secondary meanings, tertiary meanings and so on. See veni (https://dexonline.ro/definitie/veni/sinteza) for an example.",
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "description": "The ID of the parent meaning in the tree. 0 or NULL means that this meaning is a root.",
+            "type": "integer"
+          },
+          "internalRep": {
+            "description": "The meaning text.",
+            "type": "string"
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Meaning could not be inserted!"
+    }
   },
   "edgeCollections": {
-    "MeaningEntry": {},
-    "EntryLexeme": {},
-    "Relation": {}
+    "TreeEntry": {
+      "schema": {
+        "rule": {},
+        "level": "strict",
+        "message": "TreeEntry edge could not be inserted!"
+      },
+      "from": "Tree",
+      "to": "Entry"
+    },
+    "EntryLexeme": {
+      "schema": {
+        "rule": {},
+        "level": "strict",
+        "message": "EntryLexeme edge could not be inserted!"
+    },
+      "from": "Entry",
+      "to": "Lexeme"
+    },
+    "Relation": {
+      "schema": {
+        "rule": {
+          "properties": {
+            "type": {
+              "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            }
+          }
+        },
+        "level": "strict",
+        "message": "Relation edge could not be inserted!"
+      },
+      "from": "Meaning",
+      "to": "Tree"
+    }
+  },
+  "generatedEdgeCollections": {
+    "MeaningMeaning":
+    {
+      "attributeCollection": "Meaning",
+      "from": {
+        "collection": "Meaning",
+        "attribute": "parentId"
+      },
+      "to": {
+        "collection": "Meaning",
+        "attribute": "_key"
+      }
+    },
+    "MeaningTree": {
+      "attributeCollection": "Meaning",
+      "from": {
+        "collection": "Meaning",
+        "attribute": "_key"
+      },
+      "to": {
+        "collection": "Tree",
+        "attribute": "treeId"
+      }
+    }
   }
-
 }

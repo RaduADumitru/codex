@@ -1,31 +1,57 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "collections": {
     "Lexeme": {
-    "title": "Lexeme",
-    "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
-    "type": "object",
-    "properties": {
-    "form": {
-    "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
-    "type": "string"
-    },
-    "formNoAccent": {
-    "description": "Base form of the word",
-    "type": "string"
-    },
-    "hyphenatiions": {
-    "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
-    "type": "string"
-    },
-    "pronunciations": {
-    "description": "Comma-separated list of the lexeme's pronunciations. Can be empty.",
-    "type": "string"
-    }
+      "rule": {
+        "title": "Lexeme",
+        "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
+        "type": "object",
+        "properties": {
+          "form": {
+            "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
+            "type": "string"
+          },
+          "formNoAccent": {
+            "description": "Base form of the word",
+            "type": "string"
+          },
+          "hyphenatiions": {
+            "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
+            "type": "string"
+          },
+          "meanings": {
+            "description": "Array containing meanings of lexeme"},
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Lexeme could not be inserted!"
     }
   },
   "edgeCollections": {
-  "Relation": {}
+  "Relation": {
+    "schema": {
+      "rule": {
+        "title": "Relation",
+        "description": "Relation between synonyms, diminutives, augmentatives, diminutives",
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Relation could not be inserted!"
+    },
+    "from": "Meaning",
+    "to": "Meaning"
+  }
 }
 
 }

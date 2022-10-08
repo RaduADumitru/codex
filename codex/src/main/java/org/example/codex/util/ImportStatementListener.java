@@ -20,16 +20,17 @@ import java.util.List;
 public class ImportStatementListener implements StatementListener {
     @Override
     public void accept(Statement statement) {
-        //Send requests to database server
+        //TODO: Send requests to database server
+        //TODO: fix excessive memory usage
         if(statement instanceof CreateTable) {
             System.out.println("Create: " + ((CreateTable) statement).getTable());
+            //TODO: delete respective collections, then create them
         }
         else if(statement instanceof Insert insert) {
-            ArrayList<String> tables = new ArrayList<>(List.of(new String[]{"AdsLink"}));
-            if(tables.contains(insert.getTable().getName())) {
-                ItemsList itemsList = insert.getItemsList();
+                ItemsList itemsList = insert.getItemsList(); //returns list of rows inserted
                 ExpressionList expressionList = (ExpressionList) itemsList;
                 for(Expression expression : expressionList.getExpressions()) {
+                    //for iterating through rows
                     RowConstructor rowConstructor = (RowConstructor) expression;
                     List<Expression> values = rowConstructor.getExprList().getExpressions();
                     for(Expression value : values) {
@@ -39,7 +40,6 @@ public class ImportStatementListener implements StatementListener {
                     }
                     System.out.println(rowConstructor.getExprList().getExpressions().get(0));
                 }
-            }
 
 //            ValueListExpression valueListExpression = (ValueListExpression) first;
 //            System.out.println(valueListExpression.getExpressionList().getExpressions().size());
@@ -72,5 +72,6 @@ public class ImportStatementListener implements StatementListener {
 //            System.out.println(selectItems.get(0));
 //            System.out.println((PlainSelect)((Insert) statement).getSelect().getSelectBody());
         }
+        statement = null;
     }
 }
