@@ -5,39 +5,37 @@ import org.example.codex.repository.LexemeAndSystemRepository;
 import org.example.codex.responses.EdgeResponse;
 import org.example.codex.responses.KeyTypeResponse;
 import org.example.codex.responses.Schema;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 @RestController
+@RequestMapping("codex/system")
 public class SystemController {
     private final LexemeAndSystemRepository repository;
 
     public SystemController(LexemeAndSystemRepository repository) {
         this.repository = repository;
     }
-    @GetMapping("/system/schema/collections")
+    @GetMapping("schema/collections")
     Iterable<String> getCollections() {
         return repository.getCollections();
     }
-    @PostMapping("/system/collection/key_types")
+    @PostMapping("collection/key_types")
     Iterable<KeyTypeResponse> getKeyTypes(@RequestBody CollectionForm collectionForm) {
         return repository.getKeyTypes(collectionForm.getCollection());
     }
-    @PostMapping("/system/collection/is_edge_collection")
+    @PostMapping("collection/is_edge_collection")
     public Boolean isEdgeCollection(@RequestBody CollectionForm collectionForm) {
         return repository.isEdgeCollection(collectionForm.getCollection());
     }
-    @PostMapping("/system/collection/edge_relations")
+    @PostMapping("collection/edge_relations")
     List<EdgeResponse> getEdgeRelations(@RequestBody CollectionForm collectionForm) {
         return repository.getEdgeRelations(collectionForm.getCollection());
     }
-    @GetMapping("system/schema/key_types_all")
+    @GetMapping("schema/key_types_all")
     HashMap<String, List<KeyTypeResponse>> getKeyTypesAll() {
         Iterable<String> collections = repository.getCollections();
         HashMap<String, List<KeyTypeResponse>> keyTypeMap = new HashMap<>();
@@ -46,7 +44,7 @@ public class SystemController {
         }
         return keyTypeMap;
     }
-    @GetMapping("system/schema/edge_relations_all")
+    @GetMapping("schema/edge_relations_all")
     HashMap<String, List<EdgeResponse>> getEdgeRelationsAll() {
         HashMap<String, List<EdgeResponse>> edgeRelationMap = new HashMap<>();
         Iterable<String> collections = repository.getCollections();
@@ -61,14 +59,14 @@ public class SystemController {
         }
         return edgeRelationMap;
     }
-    @GetMapping("system/schema/schema")
+    @GetMapping("schema/schema")
     Schema getSchema() {
         Schema schema = new Schema();
         schema.setKeyTypeMap(getKeyTypesAll());
         schema.setEdgeRelationMap(getEdgeRelationsAll());
         return schema;
     }
-    @GetMapping("system/hello")
+    @GetMapping("hello")
     public String helloWorld() {
         return "Hello world!";
     }

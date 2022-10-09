@@ -7,9 +7,11 @@ import org.example.codex.forms.RelationForm;
 import org.example.codex.repository.LexemeAndSystemRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("codex/lexeme")
 public class LexemeController {
     private final LexemeAndSystemRepository repository;
 
@@ -17,7 +19,7 @@ public class LexemeController {
         this.repository = repository;
     }
 
-    @PostMapping("/lexeme/levenshtein")
+    @PostMapping("levenshtein")
     Iterable<String> getWithLevenshtein(@RequestBody LevenshteinForm levenshteinForm) {
         if(levenshteinForm.getCollation() == 0) {
             return repository.getWithLevenshtein(levenshteinForm.getWord(), levenshteinForm.getDist(), "formNoAccent");
@@ -32,7 +34,7 @@ public class LexemeController {
         else return null;
     }
 
-    @PostMapping("/lexeme/regex")
+    @PostMapping("regex")
     Iterable<String> getWithRegex(@RequestBody RegexForm regexForm) {
         if(regexForm.getCollation() == 0) {
             return repository.getWithRegex(regexForm.getRegex(), "formNoAccent");
@@ -46,7 +48,7 @@ public class LexemeController {
         else return null;
     }
 
-    @PostMapping("/lexeme/meanings")
+    @PostMapping("meanings")
     Iterable<String> getMeanings(@RequestBody MeaningsForm meaningsForm) {
         if(meaningsForm.getCollation() == 0) {
             return repository.getMeanings(meaningsForm.getWord(), meaningsForm.getType(), "formNoAccent");
@@ -60,7 +62,7 @@ public class LexemeController {
         else return null;
     }
 
-    @PostMapping("/lexeme/relation")
+    @PostMapping("relation")
     Iterable<String> getWithRelation(@RequestBody RelationForm relationForm) {
         if(relationForm.getCollation() == 0) {
             return repository.getLexemesWithRelation(relationForm.getWord(), relationForm.getRelationType(), "formNoAccent");
