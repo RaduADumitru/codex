@@ -18,6 +18,7 @@ Connection details can be configured in `codex/src/main/java/org/example/codex/C
 * `codex/system/schema/edge_relations_all`: GET - returns edge relations of all collections, as a JSON object in format of `collection: edge_relations` for each collection, as in `edge_relations` endpoint
 * `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
 * `codex/import/import`: import database through SQL parsing of remote SQL script (WIP)
+
 For all endpoints using the parameter `collation`: 1 represents UTF-8, 2 represents accented forms
 ## TODO:
 * finalize import through SQL parsing
