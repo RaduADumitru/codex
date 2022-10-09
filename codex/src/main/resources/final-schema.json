@@ -11,7 +11,7 @@
             "type": "string"
           },
           "formNoAccent": {
-            "description": "Base form of the word",
+            "description": "Base form of the word, without accent",
             "type": "string"
           },
           "hyphenatiions": {
