@@ -1,7 +1,7 @@
 # codex
 This Web API allows for a number of searches in the DEXonline database, using the graph database ArangoDB.
 
-As of now, the repo contains a Java Spring Boot Maven app for the API, and a dump of the [DEXonline database](https://github.com/dexonline/dexonline/wiki/Database-Schema), migrated from SQL to ArangoDB. The filedump will be loaded through the project's Docker Compose service, and is only meant as a temporary method until import through SQL parsing is implemented.
+As of now, the repo contains a Java Spring Boot Maven app for the API, and a dump of the [DEXonline database](https://github.com/dexonline/dexonline/wiki/Database-Schema), migrated from SQL to ArangoDB. The filedump will be loaded through the project's Docker Compose service, and is only meant as a temporary method until import through SQL parsing of databse initialization script is implemented.
 To start up, you can use the corresponding Docker Compose service
 
 Connection details can be configured in `codex/src/main/java/org/example/codex/CodexConfiguration.java`, and schema for partial and final imports can be modified in `codex/src/main/resources/import-schema` and `codex/src/main/resources/final-schema` respectively.
