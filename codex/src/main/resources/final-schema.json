@@ -25,9 +25,9 @@
             "type": "object",
             "properties": {
               "type": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
+                "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
+                "type": "string",
+                "enum": ["Proper meaning", "Etymology", "Usage example", "Comment/diff", "Compound expression meaning"]
               },
               "internalRep": {
                 "type": "string"
@@ -50,17 +50,16 @@
         "properties": {
           "type": {
             "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 4
+            "type": "string",
+            "enum": ["synonym", "antonym", "diminutive", "augmentative"]
           }
         }
       },
       "level": "strict",
       "message": "Relation could not be inserted!"
     },
-    "from": "Meaning",
-    "to": "Meaning"
+    "from": "Lexeme",
+    "to": "Lexeme"
   }
 }
 

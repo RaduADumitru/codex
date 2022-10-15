@@ -94,7 +94,7 @@ for col in collections()
 filter not starts_with(col.name, "_") //eliminate system collections
 return col.name
 """)
-    Iterable<String> getCollections();
+    List<String> getCollections();
     @Query("""
 let col_keys_type = (
 for obj in @@col
