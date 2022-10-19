@@ -18,6 +18,7 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.analysis.function.Exp;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.util.ReplacingInputStream;
 import org.example.codex.enums.ArangoDataTypes;
 import org.example.codex.exceptions.ImportException;
@@ -56,7 +57,6 @@ public class ImportController {
     //Test sending request to DB API; working
     @GetMapping("version")
     ResponseEntity<String> getVersion() throws IOException {
-        OkHttpClient client = new OkHttpClient();
         String credential = Credentials.basic("root", "openSesame");
         Request request = new Request.Builder()
                 .url("http://localhost:8529/_api/version")
@@ -120,6 +120,7 @@ public class ImportController {
         HashMap<String, HashMap<String, ColumnData>> SqlColumnPositionMap = new HashMap<>();
         HashMap<String, TreeSet<ColumnData>> colDataMap = new HashMap<>();
 
+        String currentCollectionName = null;
         StringBuilder insertRequestBody = new StringBuilder();
 
         //load archived database SQL script from remote link
@@ -134,17 +135,20 @@ public class ImportController {
         List<String> oldCollections = repository.getCollections();
         for(String col : oldCollections) {
             String deleteURL = baseRequestUrl + "collection/" + col;
-            Request request = new Request.Builder()
+            Request deleteRequest = new Request.Builder()
                     .url(deleteURL)
                     .addHeader("Accept", "application/json")
                     .header("Authorization", credential)
                     .delete()
                     .build();
-            Call call = client.newCall(request);
+            Call call = client.newCall(deleteRequest);
             Response response = call.execute();
             System.out.println("Delete: " + col);
             System.out.println(Objects.requireNonNull(response.body()).string());
         }
+        // traverse each line of script;
+        // starting from lines containing keyword CREATE, Create statements will be built after reaching ;, then parsed and executed according to schema
+        //lines containing INSERT will be treated as insert statements, parsed and executed: attributes in schema will be inserted
         while(sc.hasNextLine()) {
             String line = sc.nextLine();
             if(buildingCreateStatement) {
@@ -157,7 +161,7 @@ public class ImportController {
                     //parse finished statement and send request
                     CreateTable createTable = (CreateTable)CCJSqlParserUtil.parse(String.valueOf(createStatement));
                     //delete collection, then create it while applying JsonSchema
-                    String collectionName = createTable.getTable().getName();
+                    currentCollectionName = createTable.getTable().getName();
 //                    List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
 //                    for(ColumnDefinition columnDefinition : columnDefinitions) {
 //                        System.out.println("Column name: " + columnDefinition.getColumnName());
@@ -165,46 +169,47 @@ public class ImportController {
 //                        System.out.println("Column type: " + columnDefinition.getColDataType().getDataType());
 //                    }
                     //Will be stored with apostrophes; need to be removed
-                    collectionName = collectionName.replace("`", "");
+                    currentCollectionName = currentCollectionName.replace("`", "");
                     //if collection is in schema, create it as normal collection
-                    System.out.println("CREATE " + collectionName + "FINISHED PARSING");
-                    System.out.println("IS " + collectionName + " IN "+ collections.toString());
+                    System.out.println("CREATE " + currentCollectionName + "FINISHED PARSING");
+                    System.out.println("IS " + currentCollectionName + " IN "+ collections.toString());
                     //TODO: Create with schema
-                    if(collections.contains(collectionName)) {
-                        System.out.println("COLLECTIONS CONTAINS " + collectionName);
+                    if(collections.contains(currentCollectionName)) {
+                        System.out.println("COLLECTIONS CONTAINS " + currentCollectionName);
                         String requestURL = baseRequestUrl + "collection";
                         ObjectNode CreateRequestJsonObject = mapper.createObjectNode();
-                        CreateRequestJsonObject.put("name", collectionName);
+                        CreateRequestJsonObject.put("name", currentCollectionName);
                         String jsonString = mapper.writeValueAsString(CreateRequestJsonObject);
                         System.out.println("Create request string: " + jsonString);
-                        RequestBody formBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-                        Request request = new Request.Builder()
+                        RequestBody createFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
+                        Request createRequest = new Request.Builder()
                                 .url(requestURL)
                                 .addHeader("Content-Type", "application/json")
                                 .addHeader("Accept", "application/json")
                                 .header("Authorization", credential)
-                                .post(formBody)
+                                .post(createFormBody)
                                 .build();
-                        Call call = client.newCall(request);
-                        Response response = call.execute();
-                        System.out.println(Objects.requireNonNull(response.body()).string());
+                        Call call = client.newCall(createRequest);
+                        Response createResponse = call.execute();
+                        System.out.println(Objects.requireNonNull(createResponse.body()).string());
 
                         // Memorise indexes of each column in collection
-                        SqlColumnPositionMap.put(collectionName, new HashMap<>());
+                        SqlColumnPositionMap.put(currentCollectionName, new HashMap<>());
                         List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
-                        Integer columnIndex = 0;
-                        //Store position of each column in map
-                        for(ColumnDefinition columnDefinition : columnDefinitions) {
+                        //Index starts from 1: skip id
+                        Integer columnIndex = 1;
+                        //Store position of each column in map; first will not be stored since it represents id
+                        for(ColumnDefinition columnDefinition : columnDefinitions.subList(1, columnDefinitions.size() - 1)) {
                             String columnName = columnDefinition.getColumnName().replace("`", "");
                             String columnDataType = columnDefinition.getColDataType().getDataType();
-                            SqlColumnPositionMap.get(collectionName).put(columnName, new ColumnData(columnName, columnIndex, typeMap.get(columnDataType)));
+                            SqlColumnPositionMap.get(currentCollectionName).put(columnName, new ColumnData(columnName, columnIndex, typeMap.get(columnDataType)));
                             columnIndex++;
                         }
 
                         //add data types of columns in schema for this collection
 
-                        colDataMap.put(collectionName, new TreeSet<>());
-                        Iterator<String> fieldsIterator = importSchema.get("collections").get(collectionName).get("rule").get("properties").fieldNames();
+                        colDataMap.put(currentCollectionName, new TreeSet<>());
+                        Iterator<String> fieldsIterator = importSchema.get("collections").get(currentCollectionName).get("rule").get("properties").fieldNames();
                         while (fieldsIterator.hasNext()) {
                             String fieldName = fieldsIterator.next();
                             //throw exception if field in schema doesn't exist in database
@@ -220,46 +225,65 @@ public class ImportController {
 //                                    break;
 //                                }
 //                            }
-                            if(SqlColumnPositionMap.get(collectionName).containsKey(fieldName)) {
-                                Integer columnPosition = SqlColumnPositionMap.get(collectionName).get(fieldName).getPosition();
-                                ArangoDataTypes columnDataType = SqlColumnPositionMap.get(collectionName).get(fieldName).getDataType();
-                                colDataMap.get(collectionName).add(new ColumnData(fieldName, columnPosition, columnDataType));
+                            if(SqlColumnPositionMap.get(currentCollectionName).containsKey(fieldName)) {
+                                Integer columnPosition = SqlColumnPositionMap.get(currentCollectionName).get(fieldName).getPosition();
+                                ArangoDataTypes columnDataType = SqlColumnPositionMap.get(currentCollectionName).get(fieldName).getDataType();
+                                colDataMap.get(currentCollectionName).add(new ColumnData(fieldName, columnPosition, columnDataType));
                             }
                             else {
-                                throw new ImportException("Column " + fieldName + " in collection " + collectionName + " in import schema doesn't exist in database!");
+                                throw new ImportException("Column " + fieldName + " in collection " + currentCollectionName + " in import schema doesn't exist in database!");
                             }
                         }
+                        //Start building insert request body: first row represents column names inserted
+                        ArrayList<String> insertColumns = new ArrayList<>();
+                        //key will always be imported first
+                        insertColumns.add("_key");
+                        for(ColumnData colData : colDataMap.get(currentCollectionName)) {
+                            insertColumns.add(colData.getColumnName());
+                        }
+                        insertRequestBody.append(JSONArray.toJSONString(insertColumns)).append("\n");
                     }
 //                    System.out.println(String.valueOf(createStatement));
-                    //Start building insert request body: first row represents column names inserted
-                    ArrayList<String> insertColumns = new ArrayList<>();
-                    //key will always be imported first
-                    insertColumns.add("_key");
-                    for(ColumnData colData : colDataMap.get(collectionName)) {
-                        insertColumns.add(colData.getColumnName());
-                    }
-                    insertRequestBody.append(JSONArray.toJSONString(insertColumns)).append("\n");
+//                    //Start building insert request body: first row represents column names inserted
+//                    ArrayList<String> insertColumns = new ArrayList<>();
+//                    //key will always be imported first
+//                    insertColumns.add("_key");
+//                    for(ColumnData colData : colDataMap.get(currentCollectionName)) {
+//                        insertColumns.add(colData.getColumnName());
+//                    }
+//                    insertRequestBody.append(JSONArray.toJSONString(insertColumns)).append("\n");
                     //reset built statement
                     createStatement = new StringBuilder();
                     buildingCreateStatement = false;
                     System.out.println("CREATE: " + createTable.getTable().getName());
+
+                    currentCollectionName = null;
                 }
             }
+            //case when create statement is not being built
             else {
                 if(line.startsWith("INSERT")) {
-                    String table = StringUtils.substringBetween(line, "INTO `", "` VALUES");
+                    currentCollectionName = StringUtils.substringBetween(line, "INTO `", "` VALUES");
                     //statement will only be parsed if collection is in schema
-                    if(collections.contains(table)) {
+                    if(collections.contains(currentCollectionName)) {
                         //JSQLparser does not support backslash escape character in statements, only double commas
                         line = line.replace("\\'", "''");
                         Insert insert = (Insert)CCJSqlParserUtil.parse(line);
+                        System.out.println("Insert: " + insert.toString());
                         ItemsList itemsList = insert.getItemsList();
+                        //where values for a row will be stored
+                        ArrayList insertRequestBodyRowItems = new ArrayList();
+                        // 2 cases, either insert is multirow (parsed as Multiexpressionlist), or single row (parsed as Expressionlist)
                         if(itemsList instanceof MultiExpressionList multiExpressionList) {
+                            System.out.println("MultiExpressionList: " + multiExpressionList);
                             for (ExpressionList expressionList : multiExpressionList.getExpressionLists()) {
-                                //where values for a row will be stored
-                                ArrayList insertRequestBodyRowItems = new ArrayList();
                                 List<Expression> expressions = expressionList.getExpressions();
-                                for (ColumnData colData : colDataMap.get(table)) {
+
+                                //first element in insert row will always be key
+                                Expression keyExpression = expressions.get(0);
+                                insertRequestBodyRowItems.add(((LongValue)keyExpression).getValue());
+
+                                for (ColumnData colData : colDataMap.get(currentCollectionName)) {
 //                                    insertColumns.add(colData.getColumnName());
                                     Expression expression = expressions.get(colData.getPosition());
                                     ArangoDataTypes dataType = colData.getDataType();
@@ -267,13 +291,13 @@ public class ImportController {
                                         if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
                                             insertRequestBodyRowItems.add(((StringValue) expression).getValue());
                                         } else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected String!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
                                         }
                                     } else if (expression instanceof DoubleValue) {
                                         if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
                                             insertRequestBodyRowItems.add((((DoubleValue) expression).getValue()));
                                         } else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Double!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Double!");
                                         }
                                     } else if (expression instanceof LongValue) {
                                         if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
@@ -285,7 +309,7 @@ public class ImportController {
                                             } else if (longValue == 1) {
                                                 insertRequestBodyRowItems.add(true);
                                             } else {
-                                                throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Boolean!");
+                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Boolean!");
                                             }
                                         }
                                     } else if (expression instanceof NullValue) {
@@ -296,7 +320,7 @@ public class ImportController {
                                             insertRequestBodyRowItems.add(((DateValue)expression).getValue().toString());
                                         }
                                         else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Date!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Date!");
                                         }
                                     }
                                     else if(expression instanceof TimeValue) {
@@ -304,7 +328,7 @@ public class ImportController {
                                             insertRequestBodyRowItems.add(((TimeValue)expression).getValue().toString());
                                         }
                                         else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Time!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Time!");
                                         }
                                     }
                                     else if(expression instanceof TimestampValue) {
@@ -312,7 +336,7 @@ public class ImportController {
                                             insertRequestBodyRowItems.add(((TimestampValue)expression).getValue().toString());
                                         }
                                         else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Timestamp!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Timestamp!");
                                         }
                                     }
                                     else {
@@ -320,87 +344,187 @@ public class ImportController {
 
                                     }
                                 }
+                                System.out.println("Multi expression list: " + JSONArray.toJSONString(insertRequestBodyRowItems));
                                 insertRequestBody.append(JSONArray.toJSONString(insertRequestBodyRowItems)).append("\n");
                             }
                         }
                         else if(itemsList instanceof ExpressionList){
-                            ExpressionList expressionList = (ExpressionList)itemsList;
-                            //where values for a row will be stored
-                            ArrayList insertRequestBodyRowItems = new ArrayList();
-                            List<Expression> expressions = expressionList.getExpressions();
-                            for (ColumnData colData : colDataMap.get(table)) {
+//                            ExpressionList expressionList = ((ExpressionList)itemsList).getExpressions();
+                            List<Expression> expressions = ((ExpressionList)itemsList).getExpressions();
+
+//                            //first element in insert row will always be key
+//                            Expression keyExpression = expressions.get(0);
+//                            RowConstructor rowConstructor = (RowConstructor)expressions.get(0);
+//                            Expression firstKey = rowConstructor.getExprList().getExpressions().get(0);
+//                            System.out.println(firstKey);
+//                            if(firstKey instanceof LongValue longValue) {
+//                                System.out.println("first key is long: value " + longValue.getValue());
+//                            }
+//                            else {
+//                                System.out.println("Not long value");
+//                            }
+////                            System.out.println(keyExpression);
+////                            ExpressionList keyExpressionList = (ExpressionList)keyExpression;
+////                            System.out.println(keyExpressionList.getExpressions().get(0));
+//
+//                            System.out.println();
+//                            insertRequestBodyRowItems.add(((LongValue)keyExpression).getValue());
+                            for(Expression rowExpression : expressions) {
+                                // insert first expression as long value
+
+                                // insert each remaining value expression
+                                List<Expression> valueExpressionList = ((RowConstructor)rowExpression).getExprList().getExpressions();
+                                for (ColumnData colData : colDataMap.get(currentCollectionName)) {
 //                                    insertColumns.add(colData.getColumnName());
-                                Expression expression = expressions.get(colData.getPosition());
-                                ArangoDataTypes dataType = colData.getDataType();
-                                if (expression instanceof StringValue) {
-                                    if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
-                                        insertRequestBodyRowItems.add(((StringValue) expression).getValue());
-                                    } else {
-                                        throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected String!");
-                                    }
-                                } else if (expression instanceof DoubleValue) {
-                                    if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
-                                        insertRequestBodyRowItems.add((((DoubleValue) expression).getValue()));
-                                    } else {
-                                        throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Double!");
-                                    }
-                                } else if (expression instanceof LongValue) {
-                                    if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
-                                        insertRequestBodyRowItems.add((((LongValue) expression).getValue()));
-                                    } else if (colData.getDataType().equals(ArangoDataTypes.BOOLEAN)) {
-                                        long longValue = ((LongValue) expression).getValue();
-                                        if (longValue == 0) {
-                                            insertRequestBodyRowItems.add(false);
-                                        } else if (longValue == 1) {
-                                            insertRequestBodyRowItems.add(true);
+                                    Expression valueExpression = valueExpressionList.get(colData.getPosition());
+                                    ArangoDataTypes dataType = colData.getDataType();
+                                    if (valueExpression instanceof StringValue) {
+                                        if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                            insertRequestBodyRowItems.add(((StringValue) valueExpression).getValue());
                                         } else {
-                                            throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Boolean!");
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
+                                        }
+                                    } else if (valueExpression instanceof DoubleValue) {
+                                        if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+                                            insertRequestBodyRowItems.add(((DoubleValue) valueExpression).getValue());
+                                        } else {
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Double!");
+                                        }
+                                    } else if (valueExpression instanceof LongValue) {
+                                        if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+                                            insertRequestBodyRowItems.add(((LongValue) valueExpression).getValue());
+                                        } else if (colData.getDataType().equals(ArangoDataTypes.BOOLEAN)) {
+                                            long longValue = ((LongValue) valueExpression).getValue();
+                                            if (longValue == 0) {
+                                                insertRequestBodyRowItems.add(false);
+                                            } else if (longValue == 1) {
+                                                insertRequestBodyRowItems.add(true);
+                                            } else {
+                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Boolean!");
+                                            }
+                                        }
+                                    } else if (valueExpression instanceof NullValue) {
+                                        insertRequestBodyRowItems.add(null);
+                                    }
+                                    else if(valueExpression instanceof DateValue) {
+                                        if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                            insertRequestBodyRowItems.add(((DateValue)valueExpression).getValue().toString());
+                                        }
+                                        else {
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Date!");
                                         }
                                     }
-                                } else if (expression instanceof NullValue) {
-                                    insertRequestBodyRowItems.add(null);
-                                }
-                                else if(expression instanceof DateValue) {
-                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
-                                        insertRequestBodyRowItems.add(((DateValue)expression).getValue().toString());
+                                    else if(valueExpression instanceof TimeValue) {
+                                        if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                            insertRequestBodyRowItems.add(((TimeValue)valueExpression).getValue().toString());
+                                        }
+                                        else {
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Time!");
+                                        }
+                                    }
+                                    else if(valueExpression instanceof TimestampValue) {
+                                        if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                            insertRequestBodyRowItems.add(((TimestampValue)valueExpression).getValue().toString());
+                                        }
+                                        else {
+                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Timestamp!");
+                                        }
                                     }
                                     else {
-                                        throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Date!");
+                                        throw new ImportException("SQL parsing error: type could not be determined!");
                                     }
-                                }
-                                else if(expression instanceof TimeValue) {
-                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
-                                        insertRequestBodyRowItems.add(((TimeValue)expression).getValue().toString());
-                                    }
-                                    else {
-                                        throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Time!");
-                                    }
-                                }
-                                else if(expression instanceof TimestampValue) {
-                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
-                                        insertRequestBodyRowItems.add(((TimestampValue)expression).getValue().toString());
-                                    }
-                                    else {
-                                        throw new ImportException("Import schema type mismatch: collection " + table + " attribute " + colData.getColumnName() + ": expected Timestamp!");
-                                    }
-                                }
-                                else {
-                                    throw new ImportException("SQL parsing error: type could not be determined!");
-
                                 }
                             }
+//                            for (ColumnData colData : colDataMap.get(currentCollectionName)) {
+////                                    insertColumns.add(colData.getColumnName());
+//                                Expression expression = expressions.get(colData.getPosition());
+//                                ArangoDataTypes dataType = colData.getDataType();
+//                                if (expression instanceof StringValue) {
+//                                    if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+//                                        insertRequestBodyRowItems.add(((StringValue) expression).getValue());
+//                                    } else {
+//                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
+//                                    }
+//                                } else if (expression instanceof DoubleValue) {
+//                                    if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+//                                        insertRequestBodyRowItems.add((((DoubleValue) expression).getValue()));
+//                                    } else {
+//                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Double!");
+//                                    }
+//                                } else if (expression instanceof LongValue) {
+//                                    if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+//                                        insertRequestBodyRowItems.add((((LongValue) expression).getValue()));
+//                                    } else if (colData.getDataType().equals(ArangoDataTypes.BOOLEAN)) {
+//                                        long longValue = ((LongValue) expression).getValue();
+//                                        if (longValue == 0) {
+//                                            insertRequestBodyRowItems.add(false);
+//                                        } else if (longValue == 1) {
+//                                            insertRequestBodyRowItems.add(true);
+//                                        } else {
+//                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Boolean!");
+//                                        }
+//                                    }
+//                                } else if (expression instanceof NullValue) {
+//                                    insertRequestBodyRowItems.add(null);
+//                                }
+//                                else if(expression instanceof DateValue) {
+//                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+//                                        insertRequestBodyRowItems.add(((DateValue)expression).getValue().toString());
+//                                    }
+//                                    else {
+//                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Date!");
+//                                    }
+//                                }
+//                                else if(expression instanceof TimeValue) {
+//                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+//                                        insertRequestBodyRowItems.add(((TimeValue)expression).getValue().toString());
+//                                    }
+//                                    else {
+//                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Time!");
+//                                    }
+//                                }
+//                                else if(expression instanceof TimestampValue) {
+//                                    if(colData.getDataType().equals(ArangoDataTypes.STRING)) {
+//                                        insertRequestBodyRowItems.add(((TimestampValue)expression).getValue().toString());
+//                                    }
+//                                    else {
+//                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Timestamp!");
+//                                    }
+//                                }
+//                                else {
+//                                    throw new ImportException("SQL parsing error: type could not be determined!");
+//
+//                                }
+//                            }
+                            System.out.println("Expression ArrayList: " + insertRequestBodyRowItems);
+                            System.out.println("JSON Expression list: " + JSONArray.toJSONString(insertRequestBodyRowItems));
                             insertRequestBody.append(JSONArray.toJSONString(insertRequestBodyRowItems)).append("\n");
                         }
                         System.out.println("INSERT: " + insert.getTable().getName());
                         
                     }
                 }
+                //If inserts were traversed and line is not another insert, then all inserts for this collection have been traversed: insert
                 else {
-                    //TODO: send insert request?
-                    
-                    
-                    
-                    insertRequestBody = new StringBuilder();
+                    if(currentCollectionName != null && collections.contains(currentCollectionName)) {
+                        //TODO: send insert request
+                        String insertURL = baseRequestUrl + "import/collection=" + currentCollectionName + "&details=true";
+                        RequestBody insertFormBody = FormBody.create(insertRequestBody.toString(), MediaType.get("application/json; charset=utf-8"));
+                        Request insertRequest = new Request.Builder()
+                                .url(insertURL)
+                                .addHeader("Accept", "application/json")
+                                .header("Authorization", credential)
+                                .post(insertFormBody)
+                                .build();
+                        Call call = client.newCall(insertRequest);
+                        Response response = call.execute();
+                        System.out.println("Insert into:" + currentCollectionName);
+                        System.out.println(Objects.requireNonNull(response.body()).string());
+
+                        // Reset request body building
+                        insertRequestBody = new StringBuilder();
+
+                    }
                     if(line.startsWith("CREATE")) {
                         //begin building create statement to parse afterwards
                         buildingCreateStatement = true;
@@ -410,8 +534,6 @@ public class ImportController {
             }
         }
         System.out.println("Import complete!");
-        sc.close();
-        stream.close();
         //Create generated collections
 
 
