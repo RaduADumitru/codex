@@ -126,4 +126,79 @@ let to_collection = split(obj._to, "/")[0]
 return distinct {"from": from_collection, "to": to_collection}
 """)
     List<EdgeResponse> getEdgeRelations(@Param("@col") String collection);
+    @Query("""
+let all_matching_lexemes = (
+for l in Lexeme
+    let search_form = l.@form
+    let distance = levenshtein_distance(search_form, @word)
+    sort distance asc
+    return distinct search_form
+)
+for l in all_matching_lexemes
+    limit @neighborcount
+    return l
+""")
+    List<String> getKnnLevenshtein(@Param("word") String word, @Param("form") String form, @Param("neighborcount") Integer neighborcount);
+    @Query("""
+let all_matching_lexemes = (
+for l in Lexeme
+    let search_form = l.@form
+    // hamming distance allows only character substitutions, for strings of same length
+    filter length(search_form) == length(@word)
+    //in this case hamming distance will be equal to levenshtein distance
+    let distance = levenshtein_distance(search_form, @word)
+    sort distance asc
+    return distinct search_form
+)
+for l in all_matching_lexemes
+    limit @neighborcount
+    return l
+""")
+    List<String> getKnnHamming(@Param("word") String word, @Param("form") String form, @Param("neighborcount") Integer neighborcount);
+    @Query("""
+let all_matching_lexemes = (
+for l in Lexeme
+    let search_form = l.@form
+    // LCS distance allows only character insertions or deletions, so only valid when one of the strings contains the other
+    filter contains(search_form, @word) or contains(@word, search_form)
+    //in this case LCS distance will be equal to levenshtein distance
+    let distance = levenshtein_distance(search_form, @word)
+    sort distance asc
+    return distinct search_form
+)
+for l in all_matching_lexemes
+    limit @neighborcount
+    return l
+""")
+    List<String> getKnnLCS(@Param("word") String word, @Param("form") String form, @Param("neighborcount") Integer neighborcount);
+    @Query("""
+let all_matching_lexemes = (
+for l in Lexeme
+    let search_form = l.@form
+    let ngramsize = @ngramsize
+//    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
+    let distance = ngram_similarity(@word, search_form, ngramsize)
+    sort distance desc
+    return distinct l.formUtf8General
+)
+for l in all_matching_lexemes
+    limit @neighborcount
+    return l
+""")
+    List<String> getKnnNgramSimilarity(@Param("word") String word, @Param("form") String form, @Param("ngramsize") Integer ngramSize, @Param("neighborcount") Integer neighborcount);
+    @Query("""
+let all_matching_lexemes = (
+for l in Lexeme
+    let search_form = l.@form
+    let ngramsize = @ngramsize
+//    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
+    let distance = ngram_positional_similarity(@word, search_form, ngramsize)
+    sort distance desc
+    return distinct l.formUtf8General
+)
+for l in all_matching_lexemes
+    limit @neighborcount
+    return l
+""")
+    List<String> getKnnNgramPositionalSimilarity(@Param("word") String word, @Param("form") String form, @Param("ngramsize") Integer ngramSize, @Param("neighborcount") Integer neighborcount);
 }
