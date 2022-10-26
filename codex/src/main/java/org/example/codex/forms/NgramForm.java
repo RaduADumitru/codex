@@ -1,26 +1,29 @@
 package org.example.codex.forms;
 
 public class NgramForm {
-    String word;
-    String form;
-    Integer nGramSize;
-    String distanceType;
-    Integer neighborCount;
+    private String word;
+    private String wordform;
+    private Integer ngramsize;
+    private String distancetype;
+    private Integer neighborcount;
 
-    public NgramForm(String word, String form, Integer nGramSize, String distanceType, Integer neighborCount) {
+    public NgramForm(String word, String wordform, Integer ngramsize, String distancetype, Integer neighborcount) {
         this.word = word;
-        this.form = form;
-        this.nGramSize = nGramSize;
-        this.distanceType = distanceType;
-        this.neighborCount = neighborCount;
+        this.wordform = wordform;
+        this.ngramsize = ngramsize;
+        this.distancetype = distancetype;
+        this.neighborcount = neighborcount;
     }
 
-    public String getDistanceType() {
-        return distanceType;
+    public NgramForm() {
     }
 
-    public void setDistanceType(String distanceType) {
-        this.distanceType = distanceType;
+    public String getDistancetype() {
+        return distancetype;
+    }
+
+    public void setDistancetype(String distancetype) {
+        this.distancetype = distancetype;
     }
 
     public String getWord() {
@@ -31,27 +34,38 @@ public class NgramForm {
         this.word = word;
     }
 
-    public String getForm() {
-        return form;
+    public String getWordform() {
+        return wordform;
     }
 
-    public void setForm(String form) {
-        this.form = form;
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 
-    public Integer getnGramSize() {
-        return nGramSize;
+    public Integer getNgramsize() {
+        return ngramsize;
     }
 
-    public void setnGramSize(Integer nGramSize) {
-        this.nGramSize = nGramSize;
+    public void setNgramsize(Integer ngramsize) {
+        this.ngramsize = ngramsize;
     }
 
-    public Integer getNeighborCount() {
-        return neighborCount;
+    public Integer getNeighborcount() {
+        return neighborcount;
     }
 
-    public void setNeighborCount(Integer neighborCount) {
-        this.neighborCount = neighborCount;
+    public void setNeighborcount(Integer neighborcount) {
+        this.neighborcount = neighborcount;
+    }
+
+    @Override
+    public String toString() {
+        return "NgramForm{" +
+                "word='" + word + '\'' +
+                ", form='" + wordform + '\'' +
+                ", nGramSize=" + ngramsize +
+                ", distanceType='" + distancetype + '\'' +
+                ", neighborCount=" + neighborcount +
+                '}';
     }
 }

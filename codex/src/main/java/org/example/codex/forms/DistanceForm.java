@@ -1,16 +1,19 @@
 package org.example.codex.forms;
 
 public class DistanceForm {
-    String word;
-    String form;
-    String distanceType;
-    Integer neighborCount;
+    private String word;
+    private String wordform;
+    private String distancetype;
+    private Integer neighborcount;
 
-    public DistanceForm(String word, String form, String distanceType, Integer neighborCount) {
+    public DistanceForm(String word, String wordform, String distancetype, Integer neighborcount) {
         this.word = word;
-        this.form = form;
-        this.distanceType = distanceType;
-        this.neighborCount = neighborCount;
+        this.wordform = wordform;
+        this.distancetype = distancetype;
+        this.neighborcount = neighborcount;
+    }
+
+    public DistanceForm() {
     }
 
     public String getWord() {
@@ -21,27 +24,37 @@ public class DistanceForm {
         this.word = word;
     }
 
-    public String getForm() {
-        return form;
+    public String getWordform() {
+        return wordform;
     }
 
-    public void setForm(String form) {
-        this.form = form;
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 
-    public Integer getNeighborCount() {
-        return neighborCount;
+    public Integer getNeighborcount() {
+        return neighborcount;
     }
 
-    public void setNeighborCount(Integer neighborCount) {
-        this.neighborCount = neighborCount;
+    public void setNeighborcount(Integer neighborcount) {
+        this.neighborcount = neighborcount;
     }
 
-    public String getDistanceType() {
-        return distanceType;
+    public String getDistancetype() {
+        return distancetype;
     }
 
-    public void setDistanceType(String distanceType) {
-        this.distanceType = distanceType;
+    public void setDistancetype(String distancetype) {
+        this.distancetype = distancetype;
+    }
+
+    @Override
+    public String toString() {
+        return "DistanceForm{" +
+                "word='" + word + '\'' +
+                ", form='" + wordform + '\'' +
+                ", distanceType='" + distancetype + '\'' +
+                ", neighborCount=" + neighborcount +
+                '}';
     }
 }

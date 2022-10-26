@@ -1,14 +1,18 @@
 package org.example.codex.controller;
 
-import org.example.codex.forms.LevenshteinForm;
-import org.example.codex.forms.MeaningsForm;
-import org.example.codex.forms.RegexForm;
-import org.example.codex.forms.RelationForm;
+import org.example.codex.enums.Distances;
+import org.example.codex.enums.LexemeForms;
+import org.example.codex.enums.NgramDistances;
+import org.example.codex.forms.*;
 import org.example.codex.repository.LexemeAndSystemRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("codex/lexeme")

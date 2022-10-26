@@ -14,5 +14,6 @@ COPY --from=build /home/app/target/codex-0.0.1-SNAPSHOT.jar /usr/local/lib/codex
 EXPOSE 8080
 # application properties, .env file
 # Wait for database startup
-CMD ["sleep", "5"]
+# CMD ["sleep", "5"]
+HEALTHCHECK --interval=10s --start-period=10s --retries=3 --timeout=10s CMD curl --fail -u root:openSesame "localhost:8529/_api/version" || exit 1
 ENTRYPOINT ["java", "-jar","/usr/local/lib/codex.jar"]
