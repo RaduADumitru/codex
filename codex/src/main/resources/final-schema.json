@@ -27,7 +27,7 @@
               "type": {
                 "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
                 "type": "string",
-                "enum": ["Proper meaning", "Etymology", "Usage example", "Comment/diff", "Compound expression meaning"]
+                "enum": ["proper_meaning", "etymology", "usage_example", "comment_or_diff", "compound_expression_meaning"]
               },
               "internalRep": {
                 "type": "string"

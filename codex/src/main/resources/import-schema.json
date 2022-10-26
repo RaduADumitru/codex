@@ -60,8 +60,7 @@
           "type":{
             "description":"1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
             "type":"integer",
-            "minimum":1,
-            "maximum":5
+            "enum": [1, 2, 3, 4, 5]
           },
           "treeId":{
             "description":"Tree to which the meaning belongs.",
@@ -81,7 +80,6 @@
     "TreeEntry":{
       "schema":{
         "rule":{
-
         },
         "level":"strict",
         "message":"TreeEntry edge could not be inserted!"
@@ -107,8 +105,7 @@
             "type":{
               "description":"1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
               "type":"integer",
-              "minimum":1,
-              "maximum":4
+              "enum": [1, 2, 3, 4]
             }
           }
         },

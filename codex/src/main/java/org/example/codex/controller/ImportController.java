@@ -1,10 +1,7 @@
 package org.example.codex.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.sun.jdi.FloatValue;
-import com.sun.source.tree.Tree;
 import net.minidev.json.JSONArray;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
@@ -17,20 +14,15 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.insert.Insert;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.math3.analysis.function.Exp;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.util.ReplacingInputStream;
 import org.example.codex.enums.ArangoDataTypes;
 import org.example.codex.exceptions.ImportException;
-import org.example.codex.forms.CollectionForm;
 import org.example.codex.repository.LexemeAndSystemRepository;
 import org.example.codex.util.ColumnData;
-import org.example.codex.util.ImportStatementListener;
+import org.example.codex.util.ImportUtil;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,19 +43,16 @@ public class ImportController {
         this.repository = repository;
     }
     String baseRequestUrl = "http://localhost:8529/_db/dex/_api/";
-    ObjectMapper mapper = new ObjectMapper();
-    OkHttpClient client = new OkHttpClient();
-    String credential = Credentials.basic("root", "openSesame");
     //Test sending request to DB API; working
     @GetMapping("version")
     ResponseEntity<String> getVersion() throws IOException {
-        String credential = Credentials.basic("root", "openSesame");
+        String credential = ImportUtil.getInstance().getCredentials();
         Request request = new Request.Builder()
                 .url("http://localhost:8529/_api/version")
                 .addHeader("Content-Type", "application/json")
                 .header("Authorization", credential)
                 .build();
-        Call call = client.newCall(request);
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(request);
         Response response = call.execute();
         return new ResponseEntity<>(Objects.requireNonNull(response.body()).string(), HttpStatus.OK);
     }
@@ -75,45 +64,28 @@ public class ImportController {
         final HashSet<String> stringDataTypes = new HashSet<>(List.of(new String[]{"varchar", "char", "mediumtext", "longtext", "date", "timestamp"}));
         final HashSet<String> numberDataTypes = new HashSet<>(List.of(new String[]{"int", "bigint", "smallint", "float"}));
         final HashSet<String> booleanDataTypes = new HashSet<>(List.of(new String[]{"tinyint"}));
-        final HashMap<String, ArangoDataTypes> typeMap = new HashMap<String, ArangoDataTypes>(
-                Map.ofEntries(
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("varchar", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("char", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("mediumtext", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("longtext", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("date", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("timestamp", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("int", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("bigint", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("smallint", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("float", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("tinyint", ArangoDataTypes.BOOLEAN)
-                )
-        );
         //open import schema file and store it in JsonNode for traversal
 
-        ObjectMapper mapper = new ObjectMapper();
 
         Resource importSchemaFile = new ClassPathResource("import-schema.json");
         InputStream importSchemaInputStream = importSchemaFile.getInputStream();
-        JsonNode importSchema = mapper.readTree(importSchemaInputStream);
+        JsonNode importSchema = ImportUtil.getInstance().getObjectMapper().readTree(importSchemaInputStream);
         importSchemaInputStream.close();
 
         Resource finalSchemaFile = new ClassPathResource("final-schema.json");
         InputStream finalSchemaInputStream = finalSchemaFile.getInputStream();
-        JsonNode finalSchema = mapper.readTree(finalSchemaInputStream);
+        JsonNode finalSchema = ImportUtil.getInstance().getObjectMapper().readTree(finalSchemaInputStream);
         finalSchemaInputStream.close();
 
         //store schema colections, only SQL related to these will be parsed
-        Iterator<String> collectionIterator = importSchema.get("collections").fieldNames();
-        Iterator<String> edgeCollectionIterator = importSchema.get("edgeCollections").fieldNames();
+        Iterator<String> importSchemaCollectionIterator = importSchema.get("collections").fieldNames();
+        Iterator<String> importSchemaEdgeCollectionIterator = importSchema.get("edgeCollections").fieldNames();
 
-        HashSet<String> collections = new HashSet<>();
-        collectionIterator.forEachRemaining(collections::add);
-        System.out.println(collections.toString());
+        HashSet<String> importSchemaCollections = new HashSet<>();
+        importSchemaCollectionIterator.forEachRemaining(importSchemaCollections::add);
 
-        HashSet<String> edgeCollections = new HashSet<>();
-        edgeCollectionIterator.forEachRemaining(edgeCollections::add);
+        HashSet<String> importSchemaEdgeCollections = new HashSet<>();
+        importSchemaEdgeCollectionIterator.forEachRemaining(importSchemaEdgeCollections::add);
 
         //for each collection, store columns in schema along with their data types
 //        Map<String, Map<String, ArangoDataTypes>> colDataTypes = new HashMap<>();
@@ -132,20 +104,7 @@ public class ImportController {
         StringBuilder createStatement = new StringBuilder();
 
         //Delete all collections, so import is fresh
-        List<String> oldCollections = repository.getCollections();
-        for(String col : oldCollections) {
-            String deleteURL = baseRequestUrl + "collection/" + col;
-            Request deleteRequest = new Request.Builder()
-                    .url(deleteURL)
-                    .addHeader("Accept", "application/json")
-                    .header("Authorization", credential)
-                    .delete()
-                    .build();
-            Call call = client.newCall(deleteRequest);
-            Response response = call.execute();
-            System.out.println("Delete: " + col);
-            System.out.println(Objects.requireNonNull(response.body()).string());
-        }
+        ImportUtil.deleteCollections(repository.getCollections());
         // traverse each line of script;
         // starting from lines containing keyword CREATE, Create statements will be built after reaching ;, then parsed and executed according to schema
         //lines containing INSERT will be treated as insert statements, parsed and executed: attributes in schema will be inserted
@@ -160,57 +119,51 @@ public class ImportController {
                     createStatement.append(");");
                     //parse finished statement and send request
                     CreateTable createTable = (CreateTable)CCJSqlParserUtil.parse(String.valueOf(createStatement));
-                    //delete collection, then create it while applying JsonSchema
-                    currentCollectionName = createTable.getTable().getName();
+                    //Get collection name: will be surrounded by apostrophes, which need to be removed
+                    currentCollectionName = createTable.getTable().getName().replace("`", "");
 //                    List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
 //                    for(ColumnDefinition columnDefinition : columnDefinitions) {
 //                        System.out.println("Column name: " + columnDefinition.getColumnName());
 //                        System.out.println("Column spec: " + columnDefinition.getColumnSpecs().toString());
 //                        System.out.println("Column type: " + columnDefinition.getColDataType().getDataType());
 //                    }
-                    //Will be stored with apostrophes; need to be removed
-                    currentCollectionName = currentCollectionName.replace("`", "");
                     //if collection is in schema, create it as normal collection
                     System.out.println("CREATE " + currentCollectionName + "FINISHED PARSING");
-                    System.out.println("IS " + currentCollectionName + " IN "+ collections.toString());
+                    System.out.println("IS " + currentCollectionName + " IN "+ importSchemaCollections);
                     //TODO: Create with schema
-                    if(collections.contains(currentCollectionName)) {
-                        System.out.println("COLLECTIONS CONTAINS " + currentCollectionName);
-                        String requestURL = baseRequestUrl + "collection";
-                        ObjectNode CreateRequestJsonObject = mapper.createObjectNode();
-                        CreateRequestJsonObject.put("name", currentCollectionName);
-                        String jsonString = mapper.writeValueAsString(CreateRequestJsonObject);
-                        System.out.println("Create request string: " + jsonString);
-                        RequestBody createFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-                        Request createRequest = new Request.Builder()
-                                .url(requestURL)
-                                .addHeader("Content-Type", "application/json")
-                                .addHeader("Accept", "application/json")
-                                .header("Authorization", credential)
-                                .post(createFormBody)
-                                .build();
-                        Call call = client.newCall(createRequest);
-                        Response createResponse = call.execute();
-                        System.out.println(Objects.requireNonNull(createResponse.body()).string());
-
+                    Boolean isDocumentCollection = importSchemaCollections.contains(currentCollectionName);
+                    Boolean isEdgeCollection = importSchemaEdgeCollections.contains(currentCollectionName);
+                    if(isDocumentCollection && isEdgeCollection) {
+                        throw new ImportException("Collection " + currentCollectionName + " is both document collection and edge collection in import schema!");
+                    }
+                    if(isDocumentCollection || isEdgeCollection) {
+                        ImportUtil.createCollection(currentCollectionName, isEdgeCollection, null);
                         // Memorise indexes of each column in collection
-                        SqlColumnPositionMap.put(currentCollectionName, new HashMap<>());
+                        SqlColumnPositionMap.put(currentCollectionName, new HashMap<String, ColumnData>());
                         List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
                         //Index starts from 1: skip id
                         Integer columnIndex = 1;
-                        //Store position of each column in map; first will not be stored since it represents id
-                        for(ColumnDefinition columnDefinition : columnDefinitions.subList(1, columnDefinitions.size() - 1)) {
+                        //Store position of each column in map; first will not be stored since it always represents id
+                        for(ColumnDefinition columnDefinition : columnDefinitions.subList(1, columnDefinitions.size())) {
                             String columnName = columnDefinition.getColumnName().replace("`", "");
                             String columnDataType = columnDefinition.getColDataType().getDataType();
-                            SqlColumnPositionMap.get(currentCollectionName).put(columnName, new ColumnData(columnName, columnIndex, typeMap.get(columnDataType)));
+                            SqlColumnPositionMap.get(currentCollectionName).put(columnName, new ColumnData(columnName, columnIndex, ImportUtil.getInstance().getTypemap().get(columnDataType)));
                             columnIndex++;
                         }
 
                         //add data types of columns in schema for this collection
 
                         colDataMap.put(currentCollectionName, new TreeSet<>());
-                        Iterator<String> fieldsIterator = importSchema.get("collections").get(currentCollectionName).get("rule").get("properties").fieldNames();
-                        while (fieldsIterator.hasNext()) {
+                        Iterator<String> fieldsIterator = null;
+                        if(isDocumentCollection) {
+                            fieldsIterator = importSchema.get("collections").get(currentCollectionName).get("rule").get("properties").fieldNames();
+                        }
+                        else if(isEdgeCollection) {
+                            fieldsIterator = importSchema.get("edgeCollections").get(currentCollectionName).get("rule").get("properties").fieldNames();
+                        }
+                        while (true) {
+                            assert fieldsIterator != null;
+                            if (!fieldsIterator.hasNext()) break;
                             String fieldName = fieldsIterator.next();
                             //throw exception if field in schema doesn't exist in database
 //                            boolean databaseHasSchemaField = false;
@@ -237,7 +190,13 @@ public class ImportController {
                         //Start building insert request body: first row represents column names inserted
                         ArrayList<String> insertColumns = new ArrayList<>();
                         //key will always be imported first
-                        insertColumns.add("_key");
+                        if(isDocumentCollection) {
+                            insertColumns.add("_key");
+                        }
+                        else if(isEdgeCollection) {
+                            insertColumns.add("_from");
+                            insertColumns.add("_to");
+                        }
                         for(ColumnData colData : colDataMap.get(currentCollectionName)) {
                             insertColumns.add(colData.getColumnName());
                         }
@@ -265,7 +224,7 @@ public class ImportController {
                 if(line.startsWith("INSERT")) {
                     currentCollectionName = StringUtils.substringBetween(line, "INTO `", "` VALUES");
                     //statement will only be parsed if collection is in schema
-                    if(collections.contains(currentCollectionName)) {
+                    if(importSchemaCollections.contains(currentCollectionName)) {
                         //JSQLparser does not support backslash escape character in statements, only double commas
                         line = line.replace("\\'", "''");
                         Insert insert = (Insert)CCJSqlParserUtil.parse(line);
@@ -506,17 +465,17 @@ public class ImportController {
                 }
                 //If inserts were traversed and line is not another insert, then all inserts for this collection have been traversed: insert
                 else {
-                    if(currentCollectionName != null && collections.contains(currentCollectionName)) {
+                    if(currentCollectionName != null && importSchemaCollections.contains(currentCollectionName)) {
                         //TODO: send insert request
                         String insertURL = baseRequestUrl + "import/collection=" + currentCollectionName + "&details=true";
                         RequestBody insertFormBody = FormBody.create(insertRequestBody.toString(), MediaType.get("application/json; charset=utf-8"));
                         Request insertRequest = new Request.Builder()
                                 .url(insertURL)
                                 .addHeader("Accept", "application/json")
-                                .header("Authorization", credential)
+                                .header("Authorization", ImportUtil.getInstance().getCredentials())
                                 .post(insertFormBody)
                                 .build();
-                        Call call = client.newCall(insertRequest);
+                        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(insertRequest);
                         Response response = call.execute();
                         System.out.println("Insert into:" + currentCollectionName);
                         System.out.println(Objects.requireNonNull(response.body()).string());
@@ -545,18 +504,18 @@ public class ImportController {
 
     @PostMapping("create")
     ResponseEntity<String> createCollection() throws IOException {
-        ObjectNode jsonObject = mapper.createObjectNode();
+        ObjectNode jsonObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
         jsonObject.put("name", "TestCol");
-        String jsonString = mapper.writeValueAsString(jsonObject);
+        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(jsonObject);
         RequestBody formBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
         Request request = new Request.Builder()
                 .url("http://localhost:8529/_db/dex/_api/collection")
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json")
-                .header("Authorization", credential)
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
                 .post(formBody)
                 .build();
-        Call call = client.newCall(request);
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(request);
         Response response = call.execute();
         return new ResponseEntity<>(Objects.requireNonNull(response.body()).string(), HttpStatus.OK);
     }
