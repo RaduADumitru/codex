@@ -14,7 +14,7 @@
             "description":"Base form of the word",
             "type":"string"
           },
-          "hyphenatiions":{
+          "hyphenations":{
             "description":"Comma-separated list of the lexeme's hyphenations. Can be empty",
             "type":"string"
           }
@@ -80,6 +80,8 @@
     "TreeEntry":{
       "schema":{
         "rule":{
+          "properties": {
+          }
         },
         "level":"strict",
         "message":"TreeEntry edge could not be inserted!"
@@ -90,7 +92,8 @@
     "EntryLexeme":{
       "schema":{
         "rule":{
-
+          "properties": {
+          }
         },
         "level":"strict",
         "message":"EntryLexeme edge could not be inserted!"

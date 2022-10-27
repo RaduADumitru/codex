@@ -17,28 +17,11 @@ public class ImportUtil {
     private OkHttpClient okHttpClient;
     private String credentials;
     private String baseRequestUrl;
-    //mapping between SQL and ArangoDB data types
-    private HashMap<String, ArangoDataTypes> typemap;
     private ImportUtil() {
         objectMapper = new ObjectMapper();
         okHttpClient = new OkHttpClient();
         credentials = Credentials.basic("root", "openSesame");
         baseRequestUrl = "http://localhost:8529/_db/dex/_api/";
-        typemap = new HashMap<>(
-                Map.ofEntries(
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("varchar", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("char", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("mediumtext", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("longtext", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("date", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("timestamp", ArangoDataTypes.STRING),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("int", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("bigint", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("smallint", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("float", ArangoDataTypes.NUMBER),
-                        new AbstractMap.SimpleEntry<String, ArangoDataTypes>("tinyint", ArangoDataTypes.BOOLEAN)
-                )
-        );
     }
     public static ImportUtil getInstance() {
         if(instance == null) {
@@ -77,14 +60,6 @@ public class ImportUtil {
 
     public void setBaseRequestUrl(String baseRequestUrl) {
         this.baseRequestUrl = baseRequestUrl;
-    }
-
-    public HashMap<String, ArangoDataTypes> getTypemap() {
-        return typemap;
-    }
-
-    public void setTypemap(HashMap<String, ArangoDataTypes> typemap) {
-        this.typemap = typemap;
     }
 
     public static void sendCreateRequest(String statementText) {
@@ -137,10 +112,11 @@ public class ImportUtil {
         Call call = ImportUtil.getInstance().getOkHttpClient().newCall(createRequest);
         Response createResponse = call.execute();
         System.out.println(Objects.requireNonNull(createResponse.body()).string());
+        createResponse.close();
     }
     public static void deleteCollections(List<String> collections) throws IOException {
         for(String col : collections) {
-            String deleteURL = instance.getBaseRequestUrl() + "collection/" + col;
+            String deleteURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + col;
             Request deleteRequest = new Request.Builder()
                     .url(deleteURL)
                     .addHeader("Accept", "application/json")
@@ -149,6 +125,7 @@ public class ImportUtil {
                     .build();
             Call call = ImportUtil.getInstance().getOkHttpClient().newCall(deleteRequest);
             Response response = call.execute();
+            response.close();
         }
     }
 }

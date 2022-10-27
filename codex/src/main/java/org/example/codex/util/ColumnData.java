@@ -67,4 +67,13 @@ public class ColumnData implements Comparable<ColumnData>{
         }
         else return this.position.compareTo(o.position);
     }
+
+    @Override
+    public String toString() {
+        return "ColumnData{" +
+                "columnName='" + columnName + '\'' +
+                ", position=" + position +
+                ", dataType=" + dataType +
+                '}';
+    }
 }
