@@ -66,9 +66,6 @@ public class ImportController {
     ResponseEntity<String> databaseImport() throws IOException, JSQLParserException, ImportException {
         //DATA TYPES:
         //ArangoDB/JSON has three main data types: boolean, number and string: SQL types will be converted to these
-        final HashSet<String> stringDataTypes = new HashSet<>(List.of(new String[]{"varchar", "char", "mediumtext", "longtext", "date", "timestamp"}));
-        final HashSet<String> numberDataTypes = new HashSet<>(List.of(new String[]{"int", "bigint", "smallint", "float"}));
-        final HashSet<String> booleanDataTypes = new HashSet<>(List.of(new String[]{"tinyint"}));
         //open import schema file and store it in JsonNode for traversal
 
         String responseText;
@@ -125,7 +122,6 @@ public class ImportController {
         importSchemaGeneratedEdgeCollectionIterator.forEachRemaining(importSchemaGeneratedEdgeCollections::add);
 
         //for each collection, store columns in schema along with their data types
-//        Map<String, Map<String, ArangoDataTypes>> colDataTypes = new HashMap<>();
         HashMap<String, HashMap<String, ColumnData>> sqlColumnPositionMap = new HashMap<>();
         HashMap<String, TreeSet<ColumnData>> colDataMap = new HashMap<>();
 
@@ -144,8 +140,31 @@ public class ImportController {
         boolean isDocumentCollection = false;
         boolean isEdgeCollection = false;
 
+
+        //validate schema for generated edge collections
+        for(String generatedCollection : importSchemaGeneratedEdgeCollections) {
+            if(importSchemaCollections.contains(generatedCollection)) {
+                throw new ImportException("Import schema: generated edge collection " + generatedCollection + " also exists as document collection!");
+            }
+            if(importSchemaEdgeCollections.contains(generatedCollection)) {
+                throw new ImportException("Import schema: generated edge collection " + generatedCollection + " also exists as edge collection!");
+            }
+            for(String mandatoryField : new String[]{"attributeCollection", "from", "to"}) {
+                if(!importSchema.get("generatedEdgeCollections").get(generatedCollection).has(mandatoryField)) {
+                    throw new ImportException("Import schema: generated edge collection " + generatedCollection + " missing attribute '" + mandatoryField + "'!");
+                }
+            }
+            for(String directionName : new String[]{"from", "to"}) {
+                for(String directionField : new String[]{"collection", "attribute"}) {
+                    if(!importSchema.get("generatedEdgeCollections").get(generatedCollection).get(directionName).has(directionField)) {
+                        throw new ImportException("Import schema: generated edge collection " + generatedCollection + " missing attribute '" + directionField + "' in field '" + directionName + "'!");
+                    }
+                }
+            }
+        }
         //Delete all collections, so import is fresh
         ImportUtil.deleteCollections(repository.getCollections());
+
         // traverse each line of script;
         // starting from lines containing keyword CREATE, Create statements will be built after reaching ;, then parsed and executed according to schema
         //lines containing INSERT will be treated as insert statements, parsed and executed: attributes in schema will be inserted
@@ -163,7 +182,6 @@ public class ImportController {
                     currentCollectionName = createTable.getTable().getName().replace("`", "");
                     //if collection is in schema, create it as normal collection
                     System.out.println("CREATE " + currentCollectionName + "FINISHED PARSING");
-                    System.out.println("IS " + currentCollectionName + " IN " + importSchemaCollections);
                     //TODO: Create with schema
                     isDocumentCollection = importSchemaCollections.contains(currentCollectionName);
                     isEdgeCollection = importSchemaEdgeCollections.contains(currentCollectionName);
@@ -171,18 +189,27 @@ public class ImportController {
                         throw new ImportException("Collection " + currentCollectionName + " is both document collection and edge collection in import schema!");
                     }
                     if (isDocumentCollection || isEdgeCollection) {
+                        String arangoSchema;
+                        if(isDocumentCollection) {
+                            arangoSchema = importSchema.get("collections").get(currentCollectionName).toString();
+                        }
+                        else {
+                            arangoSchema = importSchema.get("edgeCollections").get(currentCollectionName).get("schema").toString();
+                        }
                         //Send create collection request
-                        ImportUtil.createCollection(currentCollectionName, isEdgeCollection, null);
+                        ImportUtil.createCollection(currentCollectionName, isEdgeCollection, arangoSchema);
                         // Memorise indexes of each column in collection
                         sqlColumnPositionMap.put(currentCollectionName, new HashMap<>());
                         List<ColumnDefinition> columnDefinitions = createTable.getColumnDefinitions();
                         //Index starts from 1: skip id
-                        Integer columnIndex = 1;
+                        Integer columnIndex;
                         // Stores column definitions for all columns except defaults (for document collections: id (column 0), for edge collections: id (col 0) and from/to id (columns 1 and 2)
                         List<ColumnDefinition> collectionColumnDefinitions;
                         if (isDocumentCollection) {
+                            columnIndex = 1;
                             collectionColumnDefinitions = columnDefinitions.subList(1, columnDefinitions.size());
                         } else {
+                            columnIndex = 3;
                             collectionColumnDefinitions = columnDefinitions.subList(3, columnDefinitions.size());
                         }
                         //Store position of each column in map; first will not be stored since it always represents id
@@ -421,14 +448,13 @@ public class ImportController {
                 }
                 else {
                     if (line.startsWith("CREATE")) {
-                        System.out.println("Starting Create Statement");
                         String createCollection = StringUtils.substringBetween(line, "CREATE TABLE `", "`");
-                        System.out.println("Starting Create Statement: " + createCollection);
+                        System.out.println("Parsing Create statement for table: " + createCollection);
                         if (importSchemaCollections.contains(createCollection) || importSchemaEdgeCollections.contains(createCollection)) {
                             if (importSchemaCollections.contains(createCollection)) {
-                                System.out.println("Found document collection " + createCollection);
+                                System.out.println("Found document collection " + createCollection + " in import schema");
                             } else if (importSchemaEdgeCollections.contains(createCollection)) {
-                                System.out.println("Found edge collection " + createCollection);
+                                System.out.println("Found edge collection " + createCollection + " in import schema");
                             }
                             //begin building create statement to parse afterwards
                             buildingCreateStatement = true;
@@ -442,8 +468,29 @@ public class ImportController {
                 }
             }
         }
-        System.out.println("Import complete!");
+        importSchemaInputStream.close();
+        System.out.println("Initial data import complete!");
+        System.out.println("Creating generated collections:");
+
         //Create generated collections
+        for(String generatedCollection : importSchemaGeneratedEdgeCollections) {
+            System.out.println("Generating collection " + generatedCollection);
+            String attributeCollection = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("attributeCollection").asText();
+
+            String fromCollection = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("from").get("collection").asText();
+            String fromAttribute = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("from").get("attribute").asText();
+
+            String toCollection = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("to").get("collection").asText();
+            String toAttribute = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("to").get("attribute").asText();
+
+            ImportUtil.createCollection(generatedCollection, true, null);
+            repository.insertIntoGeneratedCollection(fromCollection, toCollection, attributeCollection, generatedCollection, fromAttribute, toAttribute);
+        }
+        System.out.println("Generated edge collections created!");
+        //TODO: update lexemes
+        //TODO: final schema
+        //TODO: error handling
+
         return new ResponseEntity<>("Import complete", HttpStatus.OK);
     }
 

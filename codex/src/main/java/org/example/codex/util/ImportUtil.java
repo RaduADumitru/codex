@@ -35,7 +35,7 @@ public class ImportUtil {
     }
 
     public void setObjectMapper(ObjectMapper objectMapper) {
-        this.instance.objectMapper = objectMapper;
+        instance.objectMapper = objectMapper;
     }
 
     public OkHttpClient getOkHttpClient() {
@@ -81,7 +81,9 @@ public class ImportUtil {
         if(schema != null) {
 //            ObjectNode createRequestSchema = createRequestJsonObject.putObject("schema");
             JsonNode schemaTree = ImportUtil.getInstance().getObjectMapper().readTree(schema);
+            System.out.println("SCHEMA TREE: " + schemaTree.toString());
             createRequestJsonObject.set("schema", schemaTree);
+            System.out.println("CREATE REQUEST OBJECT: " + createRequestJsonObject);
 ////            createRequestSchema = schemaTree.deepCopy();
 //            createRequestSchema.put("level", schemaTree.get("level").textValue());
 //            createRequestSchema.put("message", schemaTree.get("message").textValue());

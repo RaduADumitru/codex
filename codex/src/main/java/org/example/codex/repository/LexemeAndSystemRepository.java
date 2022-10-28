@@ -130,6 +130,8 @@ return distinct {"from": from_collection, "to": to_collection}
 let all_matching_lexemes = (
 for l in Lexeme
     let search_form = l.@form
+    // avoid returning same string
+    filter search_form != @word
     let distance = levenshtein_distance(search_form, @word)
     sort distance asc
     return distinct search_form
@@ -143,8 +145,12 @@ for l in all_matching_lexemes
 let all_matching_lexemes = (
 for l in Lexeme
     let search_form = l.@form
+    
     // hamming distance allows only character substitutions, for strings of same length
     filter length(search_form) == length(@word)
+    
+    // avoid returning same string
+    filter search_form != @word
     //in this case hamming distance will be equal to levenshtein distance
     let distance = levenshtein_distance(search_form, @word)
     sort distance asc
@@ -161,6 +167,8 @@ for l in Lexeme
     let search_form = l.@form
     // LCS distance allows only character insertions or deletions, so only valid when one of the strings contains the other
     filter contains(search_form, @word) or contains(@word, search_form)
+    // avoid returning same string
+    filter search_form != @word
     //in this case LCS distance will be equal to levenshtein distance
     let distance = levenshtein_distance(search_form, @word)
     sort distance asc
@@ -175,6 +183,8 @@ for l in all_matching_lexemes
 let all_matching_lexemes = (
 for l in Lexeme
     let search_form = l.@form
+    // avoid returning same string
+    filter search_form != @word
     let ngramsize = @ngramsize
 //    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
     let distance = ngram_similarity(@word, search_form, ngramsize)
@@ -190,6 +200,8 @@ for l in all_matching_lexemes
 let all_matching_lexemes = (
 for l in Lexeme
     let search_form = l.@form
+    // avoid returning same string
+    filter search_form != word
     let ngramsize = @ngramsize
 //    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
     let distance = ngram_positional_similarity(@word, search_form, ngramsize)
@@ -201,4 +213,17 @@ for l in all_matching_lexemes
     return l
 """)
     List<String> getKnnNgramPositionalSimilarity(@Param("word") String word, @Param("form") String form, @Param("ngramsize") Integer ngramSize, @Param("neighborcount") Integer neighborcount);
+    @Query("""
+for obj in @@attributecollection
+    //bug with standard concat() function, so use concat_separator with empty separator as workaround
+    
+    let fromattributevalue = obj.@fromattribute
+    let fromvalue = concat_separator("", @fromcollection, "/", fromattributevalue)
+    
+    let toattributevalue = obj.@toattribute
+    let tovalue = concat_separator("", @tocollection, "/", toattributevalue)
+    
+    insert { _from: fromvalue, _to: tovalue } into @@generatedcollection
+    """)
+    void insertIntoGeneratedCollection(@Param("fromcollection") String fromCollection, @Param("tocollection") String toCollection, @Param("@attributecollection") String attributeCollection, @Param("@generatedcollection") String generatedCollection, @Param("fromattribute") String fromAttribute, @Param("toattribute") String toAttribute);
 }

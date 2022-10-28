@@ -58,9 +58,9 @@
             "type":"integer"
           },
           "type":{
-            "description":"1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
+            "description":"0 - (proper) meaning, 1 - etymology, 2 - a usage example from literature, 3 - user-defined comment, 4 - diff from parent meaning, 5 - compound expression meaning",
             "type":"integer",
-            "enum": [1, 2, 3, 4, 5]
+            "enum": [0, 1, 2, 3, 4, 5]
           },
           "treeId":{
             "description":"Tree to which the meaning belongs.",
