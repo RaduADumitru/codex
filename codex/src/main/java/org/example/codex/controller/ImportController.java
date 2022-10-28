@@ -325,8 +325,8 @@ public class ImportController {
                             List<Expression> rowList = ((ExpressionList) itemsList).getExpressions();
                             //TODO: FOR EACH ROW
                             for (Expression row : rowList) {
+                                expressionValues = new ArrayList();
                                 //store expressions containing values which will be added
-                                List<ExpressionDataTypeTuple> addedRowExpressions = new ArrayList<>();
                                 RowConstructor rowConstructor = (RowConstructor) row;
                                 List<Expression> rowExpressionList = rowConstructor.getExprList().getExpressions();
                                 //TODO: ObjectTag works differently: how to insert?
@@ -338,7 +338,6 @@ public class ImportController {
                                         throw new ImportException("Insert into collection " + currentCollectionName + ": key expression " + keyExpression + " not LongValue!");
                                     }
                                     //if document collection, always store id, which will be first element
-                                    addedRowExpressions.add(new ExpressionDataTypeTuple(rowExpressionList.get(0), ArangoDataTypes.NUMBER));
                                 } else {
                                     // add _from and _to values, which will be second and third expressions
                                     Expression fromExpression = rowExpressionList.get(1);
@@ -354,7 +353,7 @@ public class ImportController {
 
                                     // add _to value
                                     if (toExpression instanceof LongValue) {
-                                        // _from pattern : from collection name + '/' + id
+                                        // to pattern : to collection name + '/' + id
                                         expressionValues.add(toCollection + "/" + String.valueOf(((LongValue) toExpression).getValue()));
                                     } else {
                                         throw new ImportException("Insert into edge collection " + currentCollectionName + ": to expression " + fromExpression + " not LongValue!");
@@ -368,7 +367,8 @@ public class ImportController {
                                     // Add values
                                     if (valueExpression instanceof StringValue) {
                                         if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
-                                            expressionValues.add(((StringValue) valueExpression).getValue());
+                                            //ArangoDB doesn't escape double quotes added for SQL parsing; replace them manually
+                                            expressionValues.add((((StringValue) valueExpression).getValue()).replace("''", "'"));
                                         } else {
                                             throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
                                         }
@@ -415,6 +415,8 @@ public class ImportController {
                                         throw new ImportException("SQL parsing error: type for expression + " + valueExpression + " in collection " + currentCollectionName + "could not be determined!");
                                     }
                                 }
+                                //TODO: fix weird output
+                                System.out.println(expressionValues);
                                 insertRequestBody.append('\n').append(JSONArray.toJSONString(expressionValues));
                             }
                         } else {
@@ -425,7 +427,7 @@ public class ImportController {
                         String jsonString = insertRequestBody.toString();
                         System.out.println("INSERT INTO " + currentCollectionName + ": " + jsonString);
                         RequestBody insertFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-                        String insertRequestUrl = baseRequestUrl + "import/collection=" + currentCollectionName + "&complete=true&details=true";
+                        String insertRequestUrl = baseRequestUrl + "import?collection=" + currentCollectionName + "&complete=true&details=true";
                         Request insertRequest = new Request.Builder()
                                 .url(insertRequestUrl)
                                 .addHeader("Content-type", "application/json")
