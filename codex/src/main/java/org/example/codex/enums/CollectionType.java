@@ -1,6 +1,6 @@
 package org.example.codex.enums;
 
-public enum CollectionTypes {
+public enum CollectionType {
     DOCUMENT_COLLECTION,
     EDGE_COLLECTION,
     GENERATED_COLLECTION

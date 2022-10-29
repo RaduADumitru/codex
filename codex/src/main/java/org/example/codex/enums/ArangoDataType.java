@@ -1,6 +1,6 @@
 package org.example.codex.enums;
 
-public enum ArangoDataTypes {
+public enum ArangoDataType {
     STRING,
     NUMBER,
     BOOLEAN

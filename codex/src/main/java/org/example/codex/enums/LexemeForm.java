@@ -1,11 +1,11 @@
 package org.example.codex.enums;
-public enum LexemeForms {
+public enum LexemeForm {
     ACCENT("form"),
     NOACCENT("formNoAccent"),
     UTF8("formUtf8General");
     final String field;
 
-    LexemeForms(String field) {
+    LexemeForm(String field) {
         this.field = field;
     }
 

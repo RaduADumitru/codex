@@ -2,8 +2,14 @@ package org.example.codex.forms;
 
 public class RelationForm {
     private String word;
-    private Integer relationType; //1 synonym, 2 antonym, 3 diminutive, 4 augmentative
-    private Integer collation;
+    private String relationtype; //1 synonym, 2 antonym, 3 diminutive, 4 augmentative
+    private String wordform;
+
+    public RelationForm(String word, String relationtype, String wordform) {
+        this.word = word;
+        this.relationtype = relationtype;
+        this.wordform = wordform;
+    }
 
     public String getWord() {
         return word;
@@ -13,19 +19,19 @@ public class RelationForm {
         this.word = word;
     }
 
-    public Integer getRelationType() {
-        return relationType;
+    public String getRelationtype() {
+        return relationtype;
     }
 
-    public void setRelationType(Integer relationType) {
-        this.relationType = relationType;
+    public void setRelationtype(String relationtype) {
+        this.relationtype = relationtype;
     }
 
-    public Integer getCollation() {
-        return collation;
+    public String getWordform() {
+        return wordform;
     }
 
-    public void setCollation(Integer collation) {
-        this.collation = collation;
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 }

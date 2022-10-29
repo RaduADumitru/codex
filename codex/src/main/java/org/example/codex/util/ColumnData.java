@@ -1,6 +1,6 @@
 package org.example.codex.util;
 
-import org.example.codex.enums.ArangoDataTypes;
+import org.example.codex.enums.ArangoDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -9,12 +9,12 @@ public class ColumnData implements Comparable<ColumnData>{
 
     private String columnName;
     private Integer position;
-    private ArangoDataTypes dataType;
+    private ArangoDataType dataType;
 
     public ColumnData() {
     }
 
-    public ColumnData(String columnName, Integer position, ArangoDataTypes dataType) {
+    public ColumnData(String columnName, Integer position, ArangoDataType dataType) {
         this.columnName = columnName;
         this.position = position;
         this.dataType = dataType;
@@ -36,11 +36,11 @@ public class ColumnData implements Comparable<ColumnData>{
         this.position = position;
     }
 
-    public ArangoDataTypes getDataType() {
+    public ArangoDataType getDataType() {
         return dataType;
     }
 
-    public void setDataType(ArangoDataTypes dataType) {
+    public void setDataType(ArangoDataType dataType) {
         this.dataType = dataType;
     }
 

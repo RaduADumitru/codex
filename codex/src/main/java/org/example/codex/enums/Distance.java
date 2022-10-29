@@ -1,6 +1,6 @@
 package org.example.codex.enums;
 
-public enum Distances {
+public enum Distance {
     LEVENSHTEIN,
     HAMMING,
     LCS_DISTANCE

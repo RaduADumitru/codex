@@ -2,26 +2,13 @@ package org.example.codex.forms;
 
 public class LevenshteinForm {
     private String word;
-    private Integer dist;
-    private Integer collation;
+    private Integer distance;
+    private String wordform;
 
-    public Integer getCollation() {
-        return collation;
-    }
-
-    public void setCollation(Integer collation) {
-        this.collation = collation;
-    }
-
-    public LevenshteinForm(String word, Integer dist) {
+    public LevenshteinForm(String word, Integer distance, String wordform) {
         this.word = word;
-        this.dist = dist;
-    }
-
-    public LevenshteinForm(String word, Integer dist, Integer collation) {
-        this.word = word;
-        this.dist = dist;
-        this.collation = collation;
+        this.distance = distance;
+        this.wordform = wordform;
     }
 
     public LevenshteinForm() {
@@ -35,11 +22,19 @@ public class LevenshteinForm {
         this.word = word;
     }
 
-    public Integer getDist() {
-        return dist;
+    public Integer getDistance() {
+        return distance;
     }
 
-    public void setDist(Integer dist) {
-        this.dist = dist;
+    public void setDistance(Integer distance) {
+        this.distance = distance;
+    }
+
+    public String getWordform() {
+        return wordform;
+    }
+
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 }

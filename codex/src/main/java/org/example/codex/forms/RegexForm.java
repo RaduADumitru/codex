@@ -2,23 +2,19 @@ package org.example.codex.forms;
 
 public class RegexForm {
     private String regex;
-    private Integer collation;
+    private String wordform;
 
-    public RegexForm(String regex) {
+    public RegexForm(String regex, String wordform) {
         this.regex = regex;
+        this.wordform = wordform;
     }
 
-    public RegexForm(String regex, Integer collation) {
-        this.regex = regex;
-        this.collation = collation;
+    public String getWordform() {
+        return wordform;
     }
 
-    public Integer getCollation() {
-        return collation;
-    }
-
-    public void setCollation(Integer collation) {
-        this.collation = collation;
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 
     public RegexForm() {

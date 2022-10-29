@@ -1,8 +1,8 @@
 package org.example.codex.controller;
 
-import org.example.codex.enums.Distances;
-import org.example.codex.enums.LexemeForms;
-import org.example.codex.enums.NgramDistances;
+import org.example.codex.enums.Distance;
+import org.example.codex.enums.LexemeForm;
+import org.example.codex.enums.NgramDistance;
 import org.example.codex.forms.DistanceForm;
 import org.example.codex.forms.NgramForm;
 import org.example.codex.repository.LexemeAndSystemRepository;
@@ -25,27 +25,27 @@ public class KnnController {
     }
     @PostMapping("editdistance")
     ResponseEntity<List<String>> getEditDistance(@RequestBody DistanceForm distanceForm) {
-        Distances distance = Distances.valueOf(distanceForm.getDistancetype().toUpperCase());
-        LexemeForms lexemeForm = LexemeForms.valueOf(distanceForm.getWordform().toUpperCase());
-        if(distance == Distances.LEVENSHTEIN) {
+        Distance distance = Distance.valueOf(distanceForm.getDistancetype().toUpperCase());
+        LexemeForm lexemeForm = LexemeForm.valueOf(distanceForm.getWordform().toUpperCase());
+        if(distance == Distance.LEVENSHTEIN) {
                 return new ResponseEntity<>(repository.getKnnLevenshtein(distanceForm.getWord(), lexemeForm.getField(), distanceForm.getNeighborcount()), HttpStatus.OK);
         }
-        else if(distance == Distances.HAMMING) {
+        else if(distance == Distance.HAMMING) {
             return new ResponseEntity<>(repository.getKnnHamming(distanceForm.getWord(), lexemeForm.getField(), distanceForm.getNeighborcount()), HttpStatus.OK);
         }
-        else if(distance == Distances.LCS_DISTANCE) {
+        else if(distance == Distance.LCS_DISTANCE) {
             return new ResponseEntity<>(repository.getKnnLCS(distanceForm.getWord(), lexemeForm.getField(), distanceForm.getNeighborcount()), HttpStatus.OK);
         }
         return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
     @PostMapping("ngram")
     ResponseEntity<List<String>> getNgramDistance(@RequestBody NgramForm ngramForm) {
-        NgramDistances ngramDistance = NgramDistances.valueOf(ngramForm.getDistancetype().toUpperCase());
-        LexemeForms lexemeForm = LexemeForms.valueOf(ngramForm.getWordform().toUpperCase());
-        if(ngramDistance == NgramDistances.NGRAM_SIMILARITY) {
+        NgramDistance ngramDistance = NgramDistance.valueOf(ngramForm.getDistancetype().toUpperCase());
+        LexemeForm lexemeForm = LexemeForm.valueOf(ngramForm.getWordform().toUpperCase());
+        if(ngramDistance == NgramDistance.NGRAM_SIMILARITY) {
             return new ResponseEntity<>(repository.getKnnNgramSimilarity(ngramForm.getWord(), lexemeForm.getField(), ngramForm.getNgramsize(), ngramForm.getNeighborcount()), HttpStatus.OK);
         }
-        else if(ngramDistance == NgramDistances.NGRAM_POSITIONAL_SIMILARITY) {
+        else if(ngramDistance == NgramDistance.NGRAM_POSITIONAL_SIMILARITY) {
             return new ResponseEntity<>(repository.getKnnNgramPositionalSimilarity(ngramForm.getWord(), lexemeForm.getField(), ngramForm.getNgramsize(), ngramForm.getNeighborcount()), HttpStatus.OK);
         }
         return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);

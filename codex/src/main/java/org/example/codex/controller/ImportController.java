@@ -13,8 +13,8 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.insert.Insert;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.example.codex.enums.ArangoDataTypes;
-import org.example.codex.enums.SqlDataTypes;
+import org.example.codex.enums.ArangoDataType;
+import org.example.codex.enums.SqlDataType;
 import org.example.codex.exceptions.ImportException;
 import org.example.codex.repository.LexemeAndSystemRepository;
 import org.example.codex.util.ColumnData;
@@ -232,7 +232,7 @@ public class ImportController {
                                 for (ColumnDefinition columnDefinition : collectionColumnDefinitions) {
                                     String columnName = columnDefinition.getColumnName().replace("`", "");
                                     String columnDataType = columnDefinition.getColDataType().getDataType();
-                                    sqlColumnPositionMap.get(currentCollectionName).put(columnName, new ColumnData(columnName, columnIndex, SqlDataTypes.valueOf(columnDataType.toUpperCase()).getArangoDataType()));
+                                    sqlColumnPositionMap.get(currentCollectionName).put(columnName, new ColumnData(columnName, columnIndex, SqlDataType.valueOf(columnDataType.toUpperCase()).getArangoDataType()));
                                     columnIndex++;
                                 }
 
@@ -264,7 +264,7 @@ public class ImportController {
                                     String fieldName = fieldsIterator.next();
                                     if (sqlColumnPositionMap.get(currentCollectionName).containsKey(fieldName)) {
                                         Integer columnPosition = sqlColumnPositionMap.get(currentCollectionName).get(fieldName).getPosition();
-                                        ArangoDataTypes columnDataType = sqlColumnPositionMap.get(currentCollectionName).get(fieldName).getDataType();
+                                        ArangoDataType columnDataType = sqlColumnPositionMap.get(currentCollectionName).get(fieldName).getDataType();
                                         colDataMap.get(currentCollectionName).add(new ColumnData(fieldName, columnPosition, columnDataType));
                                     } else {
                                         throw new ImportException("Column " + fieldName + " in collection " + currentCollectionName + " in import schema doesn't exist in database!");
@@ -386,22 +386,22 @@ public class ImportController {
 
                                             // Add values
                                             if (valueExpression instanceof StringValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                                if (colData.getDataType().equals(ArangoDataType.STRING)) {
                                                     //ArangoDB doesn't escape double quotes added for SQL parsing; replace them manually
                                                     expressionValues.add((((StringValue) valueExpression).getValue()).replace("''", "'"));
                                                 } else {
                                                     throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
                                                 }
                                             } else if (valueExpression instanceof DoubleValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+                                                if (colData.getDataType().equals(ArangoDataType.NUMBER)) {
                                                     expressionValues.add(((DoubleValue) valueExpression).getValue());
                                                 } else {
                                                     throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Double!");
                                                 }
                                             } else if (valueExpression instanceof LongValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.NUMBER)) {
+                                                if (colData.getDataType().equals(ArangoDataType.NUMBER)) {
                                                     expressionValues.add(((LongValue) valueExpression).getValue());
-                                                } else if (colData.getDataType().equals(ArangoDataTypes.BOOLEAN)) {
+                                                } else if (colData.getDataType().equals(ArangoDataType.BOOLEAN)) {
                                                     long longValue = ((LongValue) valueExpression).getValue();
                                                     if (longValue == 0) {
                                                         expressionValues.add(false);
@@ -414,19 +414,19 @@ public class ImportController {
                                             } else if (valueExpression instanceof NullValue) {
                                                 expressionValues.add(null);
                                             } else if (valueExpression instanceof DateValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                                if (colData.getDataType().equals(ArangoDataType.STRING)) {
                                                     expressionValues.add(((DateValue) valueExpression).getValue().toString());
                                                 } else {
                                                     throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Date!");
                                                 }
                                             } else if (valueExpression instanceof TimeValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                                if (colData.getDataType().equals(ArangoDataType.STRING)) {
                                                     expressionValues.add(((TimeValue) valueExpression).getValue().toString());
                                                 } else {
                                                     throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Time!");
                                                 }
                                             } else if (valueExpression instanceof TimestampValue) {
-                                                if (colData.getDataType().equals(ArangoDataTypes.STRING)) {
+                                                if (colData.getDataType().equals(ArangoDataType.STRING)) {
                                                     expressionValues.add(((TimestampValue) valueExpression).getValue().toString());
                                                 } else {
                                                     throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Timestamp!");
@@ -444,7 +444,7 @@ public class ImportController {
                                 String jsonString = insertRequestBody.toString();
                                 System.out.println("INSERT INTO " + currentCollectionName + ": " + jsonString);
                                 RequestBody insertFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-                                String insertRequestUrl = baseRequestUrl + "import?collection=" + currentCollectionName + "&complete=false&details=true";
+                                String insertRequestUrl = ImportUtil.getInstance().getBaseRequestUrl() + "import?collection=" + currentCollectionName + "&complete=false&details=true";
                                 Request insertRequest = new Request.Builder()
                                         .url(insertRequestUrl)
                                         .addHeader("Content-type", "application/json")

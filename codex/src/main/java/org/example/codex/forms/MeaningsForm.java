@@ -2,29 +2,13 @@ package org.example.codex.forms;
 
 public class MeaningsForm {
     private String word;
-    private Integer type;
-    private Integer collation;
+    private String meaningtype;
+    private String wordform;
 
-    public MeaningsForm(String word, Integer type) {
+    public MeaningsForm(String word, String meaningtype, String wordform) {
         this.word = word;
-        this.type = type;
-    }
-
-    public Integer getCollation() {
-        return collation;
-    }
-
-    public void setCollation(Integer collation) {
-        this.collation = collation;
-    }
-
-    public MeaningsForm(String word, Integer type, Integer collation) {
-        this.word = word;
-        this.type = type;
-        this.collation = collation;
-    }
-
-    public MeaningsForm() {
+        this.meaningtype = meaningtype;
+        this.wordform = wordform;
     }
 
     public String getWord() {
@@ -35,11 +19,19 @@ public class MeaningsForm {
         this.word = word;
     }
 
-    public Integer getType() {
-        return type;
+    public String getMeaningtype() {
+        return meaningtype;
     }
 
-    public void setType(Integer type) {
-        this.type = type;
+    public void setMeaningtype(String meaningtype) {
+        this.meaningtype = meaningtype;
+    }
+
+    public String getWordform() {
+        return wordform;
+    }
+
+    public void setWordform(String wordform) {
+        this.wordform = wordform;
     }
 }

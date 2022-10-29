@@ -1,6 +1,6 @@
 package org.example.codex.enums;
 
-public enum JsonDataTypes {
+public enum JsonDataType {
     STRING,
     NUMBER,
     BOOLEAN,
