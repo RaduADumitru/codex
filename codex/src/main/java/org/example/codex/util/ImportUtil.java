@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.*;
 import org.example.codex.enums.ArangoDataTypes;
 import org.example.codex.enums.JsonDataTypes;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 
 import java.io.IOException;
 import java.util.*;

@@ -11,7 +11,7 @@ public class CodexConfiguration implements ArangoConfiguration {
 
     @Override
     public ArangoDB.Builder arango() {
-        // return new ArangoDB.Builder().host("localhost", 8529).user("root").password("openSesame");
+        //loads properties from arangodb.properties file
         return new ArangoDB.Builder();
     }
 
