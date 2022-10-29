@@ -90,6 +90,41 @@ for meaning in relation_meaning
 """)
     Iterable<String> getLexemesWithRelation(@Param("word") String word, @Param("relationType") Integer relationType, @Param("form") String form);
     @Query("""
+//Similar to above, but get full lexeme and insert into relation
+let translatemap = {1: "synonym", 2: "antonym", 3: "diminutive", 4: "augmentative"}
+for l in Lexeme (
+// Get to roots of meaning trees of input : Lexeme <- Entry <- Tree <- Root
+LET meaning_roots = (
+    for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+    return last(p.vertices)
+    )
+//meanings with relation to other meaning tree: parent -> child, (if relation exists) child -[relation]> tree
+LET relation_meaning_pair = (
+    for root in meaning_roots
+        for v, e, p in 1..10 outbound root MeaningMeaning, Relation
+//        //types 1) synonym, 2) antonym, 3) diminutive, 4) augmentative
+//        FILTER last(p.edges).type == @relationType
+        //penultimate element - meaning with given relationship
+        LET pos = length(p.vertices) - 2
+        //Eliminate compound expressions (type 5) containing original word; they have different meanings
+        filter p.vertices[pos].type != 5
+        return {meaning: last(p.vertices), relationType: last(p.edges).type})   
+)
+//From tree to lexemes: Tree -> Entry -> Lexeme
+for pair in relation_meaning_pair
+    let meaning = pair.meaning
+    for v, e, p in 1..3 outbound meaning MeaningTree,  TreeEntry, EntryLexeme
+    filter last(p.vertices).@form != null
+    insert {_from: l._id, _to: last(p.vertices)._id, type: translate(pair.relationType, translatemap)} into Relation
+)
+for r in Relation
+    filter IS_NUMBER(r.type)
+    remove r in Relation
+
+""")
+    void updateRelation();
+
+    @Query("""
 for col in collections()
 filter not starts_with(col.name, "_") //eliminate system collections
 return col.name
