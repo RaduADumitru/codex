@@ -17,7 +17,6 @@ import org.example.codex.enums.ArangoDataTypes;
 import org.example.codex.enums.SqlDataTypes;
 import org.example.codex.exceptions.ImportException;
 import org.example.codex.repository.LexemeAndSystemRepository;
-import org.example.codex.util.ArangoConfiguration;
 import org.example.codex.util.ColumnData;
 import org.example.codex.util.ImportUtil;
 import org.springframework.beans.factory.annotation.Value;
