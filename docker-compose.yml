@@ -1,37 +1,33 @@
-version: '3'
+version: '3.9'
 
 # Separation of concerns
 # Separation of lifecycles / lifecycle awareness
 services:
   db:
-    image: arangodb:3.9.2
+    image: arangodb:latest
     ports:
       - 8529:8529
-#    build:
-#      context: ./docker/database
+    build:
+      context: ./docker/database
     container_name: db
     environment:
       - ARANGO_ROOT_USER=root
       # Docker secrets
       # https://docs.docker.com/engine/swarm/secrets/
       - ARANGO_ROOT_PASSWORD=openSesame
-#    volumes:
- #     - ./docker/database/dump:/dump 
-#    command: sh -c "sleep 10 && arangorestore --input-directory '/dump' --create-collection true --create-database true --overwrite true --server.endpoint 'tcp://db:8529' --server.username 'root' --server.password 'openSesame' --server.database 'dex'"
     network_mode: host
-#  db_init:
-#    image: arangodb:3.9.2
-#    container_name: db_init
-#    volumes:
- #     - ./docker/database/dump:/dump
- #   command: sh -c "sleep 10 && arangorestore --server.endpoint 'tcp://localhost:8529' --input-directory '/dump' --create-collection true --create-database true --overwrite true --include-system-collections true --server.username 'root' --server.password 'openSesame' --server.database 'dex'"
- #   network_mode: host
+    healthcheck:
+      test: curl -f -u root:openSesame http://localhost:8529/_api/version || exit 1
+      timeout: 5s
+      interval: 10s
+      retries: 3
   app:
     build:
       context: ./codex
     container_name: app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 #      - db_init
     ports:
       - "8080:8080"  
