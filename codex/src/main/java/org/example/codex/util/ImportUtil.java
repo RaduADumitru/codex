@@ -67,7 +67,6 @@ public class ImportUtil {
     }
 
     public static void createCollection(String collectionName, boolean isEdgeCollection, String schema) throws IOException {
-        System.out.println("COLLECTIONS CONTAINS " + collectionName);
         String requestURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection";
         ObjectNode createRequestJsonObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
         createRequestJsonObject.put("name", collectionName);
@@ -76,27 +75,9 @@ public class ImportUtil {
             createRequestJsonObject.put("type", 3);
         }
         if(schema != null) {
-//            ObjectNode createRequestSchema = createRequestJsonObject.putObject("schema");
             JsonNode schemaTree = ImportUtil.getInstance().getObjectMapper().readTree(schema);
             System.out.println("SCHEMA TREE: " + schemaTree.toString());
             createRequestJsonObject.set("schema", schemaTree);
-            System.out.println("CREATE REQUEST OBJECT: " + createRequestJsonObject);
-////            createRequestSchema = schemaTree.deepCopy();
-//            createRequestSchema.put("level", schemaTree.get("level").textValue());
-//            createRequestSchema.put("message", schemaTree.get("message").textValue());
-//            ObjectNode ruleObject = createRequestSchema.putObject("rule");
-//            ObjectNode propertiesObject = ruleObject.putObject("properties");
-//            JsonNode schemaTreeProperties = schemaTree.get("rule").get("properties");
-//            Iterator<String> propertyNames = schemaTreeProperties.fieldNames();
-//            while(propertyNames.hasNext()) {
-//                String propertyName = propertyNames.next();
-//                ObjectNode propertyObject = propertiesObject.putObject(propertyName);
-//                if(schemaTreeProperties.get(propertyName).has("type")) {
-//                    String typeName = schemaTreeProperties.get("type").asText();
-//                    JsonDataTypes jsonType = JsonDataTypes.valueOf(typeName.toUpperCase());
-//                    propertyObject.put("type", typeName);
-//                }
-//                if(schemaTreeProperties.get(propertyName).has(""))
             }
         String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(createRequestJsonObject);
 //        System.out.println("Create request string: " + jsonString);
@@ -110,7 +91,7 @@ public class ImportUtil {
                 .build();
         Call call = ImportUtil.getInstance().getOkHttpClient().newCall(createRequest);
         Response createResponse = call.execute();
-        System.out.println(Objects.requireNonNull(createResponse.body()).string());
+        System.out.println("Created collection " + collectionName + ": " + Objects.requireNonNull(createResponse.body()).string());
         createResponse.close();
     }
     public static void deleteCollections(List<String> collections) throws IOException {

@@ -300,8 +300,8 @@ public class ImportController {
                             createStatement = new StringBuilder();
                             buildingCreateStatement = false;
                             System.out.println("CREATE: " + createTable.getTable().getName());
-                            System.out.println("SQL COL MAP: " + sqlColumnPositionMap);
-                            System.out.println("COL DATA MAP: " + colDataMap);
+//                            System.out.println("SQL COL MAP: " + sqlColumnPositionMap);
+//                            System.out.println("COL DATA MAP: " + colDataMap);
 //                    currentCollectionName = null;
                         }
                     }
@@ -435,14 +435,14 @@ public class ImportController {
                                                 throw new ImportException("SQL parsing error: type for expression + " + valueExpression + " in collection " + currentCollectionName + "could not be determined!");
                                             }
                                         }
-                                        System.out.println(expressionValues);
+//                                        System.out.println(expressionValues);
                                         insertRequestBody.append('\n').append(JSONArray.toJSONString(expressionValues));
                                     }
                                 } else {
                                     throw new ImportException("Items List " + itemsList + " not ExpressionList!");
                                 }
                                 String jsonString = insertRequestBody.toString();
-                                System.out.println("INSERT INTO " + currentCollectionName + ": " + jsonString);
+//                                System.out.println("INSERT INTO " + currentCollectionName + ": " + jsonString);
                                 RequestBody insertFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
                                 String insertRequestUrl = ImportUtil.getInstance().getBaseRequestUrl() + "import?collection=" + currentCollectionName + "&complete=false&details=true";
                                 Request insertRequest = new Request.Builder()

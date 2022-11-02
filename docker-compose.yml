@@ -21,6 +21,8 @@ services:
       timeout: 5s
       interval: 10s
       retries: 3
+    volumes:
+      - arangodb_data_container:/var/lib/arangodb3
   app:
     build:
       context: ./codex
@@ -33,4 +35,5 @@ services:
     restart: on-failure
     network_mode: host
           
-
+volumes:
+  arangodb_data_container:
