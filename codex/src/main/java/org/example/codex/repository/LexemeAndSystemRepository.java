@@ -224,7 +224,7 @@ for l in Lexeme
 //    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
     let distance = ngram_similarity(@word, search_form, ngramsize)
     sort distance desc
-    return distinct l.formUtf8General
+    return distinct search_form
 )
 for l in all_matching_lexemes
     limit @neighborcount
@@ -236,12 +236,12 @@ let all_matching_lexemes = (
 for l in Lexeme
     let search_form = l.@form
     // avoid returning same string
-    filter search_form != word
+    filter search_form != @word
     let ngramsize = @ngramsize
 //    let distance = levenshtein_distance(l.formUtf8General, "anaaremere")
     let distance = ngram_positional_similarity(@word, search_form, ngramsize)
     sort distance desc
-    return distinct l.formUtf8General
+    return distinct search_form
 )
 for l in all_matching_lexemes
     limit @neighborcount
