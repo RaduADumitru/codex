@@ -12,8 +12,4 @@ RUN mvn -f /home/app/pom.xml -Dmaven.test.skip=true clean package
 FROM maven:3.8.6-openjdk-18
 COPY --from=build /home/app/target/codex-0.0.1-SNAPSHOT.jar /usr/local/lib/codex.jar
 EXPOSE 8080
-# application properties, .env file
-# Wait for database startup
-# CMD ["sleep", "5"]
-HEALTHCHECK --interval=10s --start-period=10s --retries=3 --timeout=10s CMD curl --fail -u root:openSesame "localhost:8529/_api/version" || exit 1
 ENTRYPOINT ["java", "-jar","/usr/local/lib/codex.jar"]
