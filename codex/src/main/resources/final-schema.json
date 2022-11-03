@@ -19,48 +19,59 @@
             "type": "string"
           },
           "meanings": {
-            "description": "Array containing meanings of lexeme"},
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
-                "type": "string",
-                "enum": ["proper_meaning", "etymology", "usage_example", "comment_or_diff", "compound_expression_meaning"]
-              },
-              "internalRep": {
-                "type": "string"
+            "description": "Array containing meanings of lexeme",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
+                  "type": "string",
+                  "enum": [
+                    "proper_meaning",
+                    "etymology",
+                    "usage_example",
+                    "comment_or_diff",
+                    "compound_expression_meaning"
+                  ]
+                },
+                "internalRep": {
+                  "type": "string"
+                }
               }
             }
           }
-        }
-      },
-      "level": "strict",
-      "message": "Lexeme could not be inserted!"
+        },
+        "level": "strict",
+        "message": "Lexeme could not be inserted!"
+      }
     }
-  },
-  "edgeCollections": {
-  "Relation": {
-    "schema": {
-      "rule": {
-        "title": "Relation",
-        "description": "Relation between synonyms, diminutives, augmentatives, diminutives",
-        "type": "object",
-        "properties": {
-          "type": {
-            "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
-            "type": "string",
-            "enum": ["synonym", "antonym", "diminutive", "augmentative"]
-          }
-        }
-      },
-      "level": "strict",
-      "message": "Relation could not be inserted!"
     },
-    "from": "Lexeme",
-    "to": "Lexeme"
+    "edgeCollections": {
+      "Relation": {
+        "schema": {
+          "rule": {
+            "title": "Relation",
+            "description": "Relation between synonyms, diminutives, augmentatives, diminutives",
+            "type": "object",
+            "properties": {
+              "type": {
+                "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",
+                "type": "string",
+                "enum": [
+                  "synonym",
+                  "antonym",
+                  "diminutive",
+                  "augmentative"
+                ]
+              }
+            }
+          },
+          "level": "strict",
+          "message": "Relation could not be inserted!"
+        },
+        "from": "Lexeme",
+        "to": "Lexeme"
+      }
+    }
   }
-}
-
-}

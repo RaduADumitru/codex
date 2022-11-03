@@ -1,11 +1,13 @@
 package org.example.codex.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.*;
 
 public class ImportUtil {
@@ -94,18 +96,68 @@ public class ImportUtil {
         System.out.println("Created collection " + collectionName + ": " + Objects.requireNonNull(createResponse.body()).string());
         createResponse.close();
     }
+    public static void deleteCollection(String collectionName) throws IOException {
+        String deleteURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + collectionName;
+        Request deleteRequest = new Request.Builder()
+                .url(deleteURL)
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .delete()
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(deleteRequest);
+        Response response = call.execute();
+        response.close();
+    }
     public static void deleteCollections(List<String> collections) throws IOException {
         for(String col : collections) {
-            String deleteURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + col;
-            Request deleteRequest = new Request.Builder()
-                    .url(deleteURL)
-                    .addHeader("Accept", "application/json")
-                    .header("Authorization", ImportUtil.getInstance().getCredentials())
-                    .delete()
-                    .build();
-            Call call = ImportUtil.getInstance().getOkHttpClient().newCall(deleteRequest);
-            Response response = call.execute();
-            response.close();
+//            String deleteURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + col;
+//            Request deleteRequest = new Request.Builder()
+//                    .url(deleteURL)
+//                    .addHeader("Accept", "application/json")
+//                    .header("Authorization", ImportUtil.getInstance().getCredentials())
+//                    .delete()
+//                    .build();
+//            Call call = ImportUtil.getInstance().getOkHttpClient().newCall(deleteRequest);
+//            Response response = call.execute();
+//            response.close();
+            deleteCollection(col);
         }
+    }
+    public static void setSchema(String collectionName, String schema) throws IOException {
+        String updateURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + collectionName + "/properties";
+        ObjectNode updateRequestObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
+        JsonNode schemaRequestObject = ImportUtil.getInstance().getObjectMapper().readTree(schema);
+        updateRequestObject.set("schema", schemaRequestObject);
+        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(updateRequestObject);
+        RequestBody updateRequestBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
+        Request setSchemaRequest = new Request.Builder()
+                .url(updateURL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .put(updateRequestBody)
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(setSchemaRequest);
+        Response createResponse = call.execute();
+        System.out.println("Set final schema for collection " + collectionName + ": " + Objects.requireNonNull(createResponse.body()).string());
+        createResponse.close();
+    }
+    public static void renameCollection(String oldName, String newName) throws IOException {
+        String updateURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + oldName + "/rename";
+        ObjectNode updateRequestObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
+        updateRequestObject.put("name", newName);
+        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(updateRequestObject);
+        RequestBody updateRequestBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
+        Request setSchemaRequest = new Request.Builder()
+                .url(updateURL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .put(updateRequestBody)
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(setSchemaRequest);
+        Response createResponse = call.execute();
+        System.out.println("Renamed collection " + oldName + " into " + newName + ": " + Objects.requireNonNull(createResponse.body()).string());
+        createResponse.close();
     }
 }

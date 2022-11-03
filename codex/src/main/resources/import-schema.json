@@ -74,6 +74,80 @@
       },
       "level":"strict",
       "message":"Meaning could not be inserted!"
+    },
+    "InflectedForm": {
+      "rule": {
+        "title": "InflectedForm",
+        "description": "This table stores all the inflected forms for all the lexemes. All these forms are generated according to each lexeme's model type and number.",
+        "properties": {
+          "form": {
+            "description": "The form, including an apostrophe (') for the accent",
+            "type": "string"
+          },
+          "formNoAccent": {
+            "description": "Obtained from form by removing the apostrophe. Same rationale as for Lexeme.formNoAccent",
+            "type": "string"
+          },
+          "lexemeId": {
+            "description": "Matches Lexeme.id",
+            "type": "integer"
+          },
+          "inflectionId": {
+            "description": "Matches Inflection.id",
+            "type": "integer"
+          },
+          "recommended": {
+            "description": "true if the form is still in use in current speech. This corresponds to ModelDescription.recommended, but is cached on every InflectedForm for speed.",
+            "type": "integer"
+          },
+          "apheresis": {
+            "description": "true if this form was generated through apheresis (has lost the initial letter).",
+            "type": "boolean"
+          },
+          "apocope": {
+            "description": "true if this form was generated through apocope (has lost the final letter).",
+            "type": "boolean"
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Inflected form could not be inserted!"
+    },
+    "Inflection": {
+      "rule": {
+        "title": "Inflection",
+        "description": "This is an unstructured list of all the possible inflected forms in Romanian, for example \"Substantiv neutru, Nominativ-Acuzativ, plural, nearticulat\".",
+        "properties": {
+          "description": {
+            "description": "The full name of this inflection.",
+            "type": "string"
+          },
+          "modelType": {
+            "description": "To which model type (think \"part of speech\") this inflection belongs. For simplicity we only use each inflection once, although technically we could reuse for example \"masculine singular\" for masculine nouns, adjectives and pronouns.",
+            "type": "string"
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Inflection could not be inserted!"
+    },
+    "Tag": {
+      "rule": {
+        "title": "Tag",
+        "description": "Tags are little bits of information attached to objects, like regional, ironic or obscene.",
+        "properties": {
+          "parentId": {
+            "description": "ID of the parent tag. Tags are hierarchical.",
+            "type": "integer"
+          },
+          "value": {
+            "description": "The text of the tag",
+            "type": "string"
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Tag could not be inserted!"
     }
   },
   "edgeCollections":{
@@ -117,6 +191,27 @@
       },
       "from":"Meaning",
       "to":"Tree"
+    },
+    "ObjectTag": {
+      "schema": {
+        "rule": {
+          "properties": {
+            "objectType": {
+              "description": "Object with given tag: 1 - definition, 2 - lexeme, 3 - meaning, 4 - source, 5 - definitionVersion, 6 - entry, 7 - tree",
+              "type": "integer",
+              "enum": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ]
+            }
+          }
+        }
+      }
     }
   },
   "generatedEdgeCollections":{
@@ -140,6 +235,28 @@
       "to":{
         "collection":"Tree",
         "attribute":"treeId"
+      }
+    },
+    "LexemeInflectedForm": {
+      "attributeCollection": "InflectedForm",
+      "from": {
+        "collection": "Lexeme",
+        "attribute": "lexemeId"
+      },
+      "to": {
+        "collection": "InflectedForm",
+        "attribute": "_key"
+      }
+    },
+    "InflectionInflectedForm": {
+      "attributeCollection": "InflectedForm",
+      "from": {
+        "collection": "Inflection",
+        "attribute": "inflectionId"
+      },
+      "to": {
+        "collection": "InflectedForm",
+        "attribute": "_key"
       }
     }
   }
