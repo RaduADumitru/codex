@@ -58,6 +58,74 @@ public interface LexemeAndSystemRepository extends ArangoRepository<Lexeme, Stri
 """)
     Iterable<String> getMeanings(@Param("word") String word, @Param("type") Integer type, @Param("form") String form);
     @Query("""
+    //insert array of etymologies into each lexeme
+    for l in Lexeme
+    //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        //meaning root has no parent
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3]
+        )
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let meanings = (    
+    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
+        return distinct v
+        )
+    let etymologies = (
+    for m in meanings
+    filter m.type == 1
+    return m
+    )
+    let etymology_array = (
+    for etymology in etymologies
+    for v, e, p in 1..1 outbound etymology ObjectTag
+    return {original_word: etymology.internalRep, origin: p.vertices[1].value}
+    )
+    update { _key: l._key, etymologies: etymology_array} in Lexeme
+""")
+    void insertEtymologies();
+    @Query("""
+    //insert array of meanings into each lexeme
+    for l in Lexeme
+    //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        //meaning root has no parent
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3])
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let meanings = (    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
+        filter v.internalRep != null and v.internalRep != ""
+        filter v.type == 0 or v.type == 5
+        return distinct v.internalRep)
+    update {_key: l._key, meanings: meanings} in Lexeme
+""")
+    void insertMeanings();
+    @Query("""
+    //insert array of usage examples into each lexeme
+    for l in Lexeme
+    //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        //meaning root has no parent
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3])
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let examples = (    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
+        filter v.internalRep != null and v.internalRep != ""
+        filter v.type == 2
+        return distinct v.internalRep)
+    update {_key: l._key, usageExamples: examples} in Lexeme
+""")
+    void insertUsageExamples();
+    @Query("""
 // Get Lexemes with relation to input (synonyms, antonyms, diminutives, augmentatives)
 //Start: lexemes with same form as input word
 LET start_vertices = (
@@ -256,7 +324,7 @@ for obj in @@attributecollection
     @Query("""
 for l in Lexeme
 //language codes: ISO 639-1
-update {language: "ro"} in Lexeme
+update {_key: l._key, language: "ro"} in Lexeme
 """)
     void setRomanianLanguage();
     @Query("""

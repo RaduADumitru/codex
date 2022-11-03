@@ -580,22 +580,28 @@ public class ImportController {
                         String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
                         ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
                     }
-                    //TODO: update lexemes
-                    //TODO: INSERT INFLECTED FORMS
-                    //TODO: INSERT MEANINGS
+                    // Update Lexemes
                     if(finalSchemaCollections.contains("Lexeme")) {
+                        System.out.println("Adding meanings to lexemes:");
+                        repository.insertMeanings();
+                        System.out.println("Adding usage examples to lexemes:");
+                        repository.insertUsageExamples();
+                        System.out.println("Adding etymologies to lexemes:");
+                        repository.insertEtymologies();
+                        System.out.println("Setting language:");
                         repository.setRomanianLanguage();
                     }
-                    //TODO: update relation
+                    // Update Relation
                     System.out.println("Updating Relation: ");
                     if(finalSchemaEdgeCollections.contains("Relation")) {
                         ImportUtil.createCollection("RelationTemp", true, null);
+                        System.out.println("Updating Relation collection:");
                         repository.createRelationTemp();
                         //Replace Relation with newly built collection
                         ImportUtil.deleteCollection("Relation");
                         ImportUtil.renameCollection("RelationTemp", "Relation");
                     }
-                    //TODO: Remove collections not in final schema
+                    //Remove collections not in final schema
                     System.out.println("Removing collections not in final schema:");
                     for(String importSchemaCollection : importSchemaCollections) {
                         if(!finalSchemaCollections.contains(importSchemaCollection)) {
@@ -610,18 +616,16 @@ public class ImportController {
                     for(String importSchemaGeneratedEdgeCollection : importSchemaGeneratedEdgeCollections) {
                         ImportUtil.deleteCollection(importSchemaGeneratedEdgeCollection);
                     }
-                    //TODO: unset attributes not in final schema
+                    //Unset attributes not in final schema
                     for(String finalCollection: finalSchemaCollections) {
                         for (Iterator<String> it = importSchema.get("collections").get(finalCollection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
                             String field = it.next();
                             if(!finalSchema.get("collections").get(finalCollection).get("rule").get("properties").has(field)) {
                                 System.out.println("Unsetting attribute " + field + " in collection " + finalCollection);
+                                repository.unsetAttribute(finalCollection, field);
                             }
                         }
                     }
-                    //TODO: final schema
-
-
                 }
 
             }
