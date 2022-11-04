@@ -31,9 +31,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8080:8080"  
-    restart: on-failure
+      - "8080:8080" 
     network_mode: host
-          
 volumes:
   arangodb_data_container:
