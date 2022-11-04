@@ -17,7 +17,7 @@ import org.example.codex.enums.ArangoDataType;
 import org.example.codex.enums.SqlDataType;
 import org.example.codex.exceptions.ImportException;
 import org.example.codex.forms.ImportForm;
-import org.example.codex.repository.LexemeAndSystemRepository;
+import org.example.codex.repository.QueryRepository;
 import org.example.codex.util.ColumnData;
 import org.example.codex.util.ImportUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +43,7 @@ import java.util.zip.GZIPInputStream;
 @RequestMapping("/codex/import/")
 public class ImportController {
 
-    private final LexemeAndSystemRepository repository;
+    private final QueryRepository repository;
 
     //Get configuration
 
@@ -58,7 +58,7 @@ public class ImportController {
     @Value("${arangodb.password}")
     private String arangoDbPassword;
     private Boolean importing = false;
-    public ImportController(LexemeAndSystemRepository repository) {
+    public ImportController(QueryRepository repository) {
         this.repository = repository;
     }
 
@@ -213,7 +213,7 @@ public class ImportController {
                                 //Get collection name: will be surrounded by apostrophes, which need to be removed
                                 currentCollectionName = createTable.getTable().getName().replace("`", "");
                                 //if collection is in schema, create it as normal collection
-                                System.out.println("CREATE " + currentCollectionName + "FINISHED PARSING");
+                                System.out.println("CREATE " + currentCollectionName + " FINISHED PARSING");
                                 isDocumentCollection = importSchemaCollections.contains(currentCollectionName);
                                 isEdgeCollection = importSchemaEdgeCollections.contains(currentCollectionName);
                                 if (isDocumentCollection && isEdgeCollection) {
@@ -570,74 +570,213 @@ public class ImportController {
                     repository.insertIntoGeneratedCollection(fromCollection, toCollection, attributeCollection, generatedCollection, fromAttribute, toAttribute);
                 }
                 System.out.println("Generated edge collections created!");
+                importing = false;
+//                if(completeImport) {
+//                    //set final schemas
+//                    for(String finalDocumentCollection : finalSchemaCollections) {
+//                        String schemaJsonString = finalSchema.get("collections").get(finalDocumentCollection).toString();
+//                        ImportUtil.setSchema(finalDocumentCollection, schemaJsonString);
+//                    }
+//                    for(String finalEdgeCollection : finalSchemaEdgeCollections) {
+//                        String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
+//                        ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
+//                    }
+//                    // Update Lexemes
+//                    if(finalSchemaCollections.contains("Lexeme")) {
+//                        System.out.println("Adding meanings to lexemes:");
+//                        repository.insertMeanings();
+//                        System.out.println("Adding usage examples to lexemes:");
+//                        repository.insertUsageExamples();
+//                        System.out.println("Adding etymologies to lexemes:");
+//                        repository.insertEtymologies();
+//                        System.out.println("Setting language:");
+//                        repository.setRomanianLanguage();
+//                    }
+//                    // Update Relation
+//                    System.out.println("Updating Relation: ");
+//                    if(finalSchemaEdgeCollections.contains("Relation")) {
+//                        ImportUtil.createCollection("RelationTemp", true, null);
+//                        System.out.println("Updating Relation collection:");
+//                        repository.createRelationTemp();
+//                        //Replace Relation with newly built collection
+//                        ImportUtil.deleteCollection("Relation");
+//                        ImportUtil.renameCollection("RelationTemp", "Relation");
+//                    }
+//                    //Remove collections not in final schema
+//                    System.out.println("Removing collections not in final schema:");
+//                    for(String importSchemaCollection : importSchemaCollections) {
+//                        if(!finalSchemaCollections.contains(importSchemaCollection)) {
+//                            ImportUtil.deleteCollection(importSchemaCollection);
+//                        }
+//                    }
+//                    for(String importSchemaEdgeCollection : importSchemaEdgeCollections) {
+//                        if(!finalSchemaEdgeCollections.contains(importSchemaEdgeCollection)) {
+//                            ImportUtil.deleteCollection(importSchemaEdgeCollection);
+//                        }
+//                    }
+//                    for(String importSchemaGeneratedEdgeCollection : importSchemaGeneratedEdgeCollections) {
+//                        ImportUtil.deleteCollection(importSchemaGeneratedEdgeCollection);
+//                    }
+//                    //Unset attributes not in final schema
+//                    for(String finalCollection: finalSchemaCollections) {
+//                        for (Iterator<String> it = importSchema.get("collections").get(finalCollection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
+//                            String field = it.next();
+//                            if(!finalSchema.get("collections").get(finalCollection).get("rule").get("properties").has(field)) {
+//                                System.out.println("Unsetting attribute " + field + " in collection " + finalCollection);
+//                                repository.unsetAttribute(finalCollection, field);
+//                            }
+//                        }
+//                    }
+//                }
                 if(completeImport) {
-                    //set final schemas
-                    for(String finalDocumentCollection : finalSchemaCollections) {
-                        String schemaJsonString = finalSchema.get("collections").get(finalDocumentCollection).toString();
-                        ImportUtil.setSchema(finalDocumentCollection, schemaJsonString);
-                    }
-                    for(String finalEdgeCollection : finalSchemaEdgeCollections) {
-                        String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
-                        ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
-                    }
-                    // Update Lexemes
-                    if(finalSchemaCollections.contains("Lexeme")) {
-                        System.out.println("Adding meanings to lexemes:");
-                        repository.insertMeanings();
-                        System.out.println("Adding usage examples to lexemes:");
-                        repository.insertUsageExamples();
-                        System.out.println("Adding etymologies to lexemes:");
-                        repository.insertEtymologies();
-                        System.out.println("Setting language:");
-                        repository.setRomanianLanguage();
-                    }
-                    // Update Relation
-                    System.out.println("Updating Relation: ");
-                    if(finalSchemaEdgeCollections.contains("Relation")) {
-                        ImportUtil.createCollection("RelationTemp", true, null);
-                        System.out.println("Updating Relation collection:");
-                        repository.createRelationTemp();
-                        //Replace Relation with newly built collection
-                        ImportUtil.deleteCollection("Relation");
-                        ImportUtil.renameCollection("RelationTemp", "Relation");
-                    }
-                    //Remove collections not in final schema
-                    System.out.println("Removing collections not in final schema:");
-                    for(String importSchemaCollection : importSchemaCollections) {
-                        if(!finalSchemaCollections.contains(importSchemaCollection)) {
-                            ImportUtil.deleteCollection(importSchemaCollection);
-                        }
-                    }
-                    for(String importSchemaEdgeCollection : importSchemaEdgeCollections) {
-                        if(!finalSchemaEdgeCollections.contains(importSchemaEdgeCollection)) {
-                            ImportUtil.deleteCollection(importSchemaEdgeCollection);
-                        }
-                    }
-                    for(String importSchemaGeneratedEdgeCollection : importSchemaGeneratedEdgeCollections) {
-                        ImportUtil.deleteCollection(importSchemaGeneratedEdgeCollection);
-                    }
-                    //Unset attributes not in final schema
-                    for(String finalCollection: finalSchemaCollections) {
-                        for (Iterator<String> it = importSchema.get("collections").get(finalCollection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
-                            String field = it.next();
-                            if(!finalSchema.get("collections").get(finalCollection).get("rule").get("properties").has(field)) {
-                                System.out.println("Unsetting attribute " + field + " in collection " + finalCollection);
-                                repository.unsetAttribute(finalCollection, field);
-                            }
-                        }
-                    }
+                    optimizePartialImport();
                 }
-
             }
             catch(Exception e) {
                 //delete database content on errors
-                ImportUtil.deleteCollections(repository.getCollections());
                 importing = false;
+                ImportUtil.deleteCollections(repository.getCollections());
                 throw e;
             }
             importing = false;
             System.out.println("Import complete!");
             return new ResponseEntity<>("Import complete", HttpStatus.OK);
+        }
+    }
+    @PostMapping("optimize")
+    ResponseEntity<String> optimizePartialImport() throws ImportException, IOException {
+        if(importing) {
+            throw new ImportException("Import already in progress!");
+        }
+        else {
+            importing = true;
+            try {
+                String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
+                ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
+                ImportUtil.getInstance().setCredentials(Credentials.basic(arangoDbUser, arangoDbPassword));
+
+                //open import schema file and store it in JsonNode for traversal
+
+                String importSchemaFileName = "import-schema.json";
+                Resource importSchemaFile = new ClassPathResource(importSchemaFileName);
+                InputStream importSchemaInputStream = importSchemaFile.getInputStream();
+                JsonNode importSchema = ImportUtil.getInstance().getObjectMapper().readTree(importSchemaInputStream);
+                importSchemaInputStream.close();
+
+                String finalSchemaFileName = "final-schema.json";
+                Resource finalSchemaFile = new ClassPathResource(finalSchemaFileName);
+                InputStream finalSchemaInputStream = finalSchemaFile.getInputStream();
+                JsonNode finalSchema = ImportUtil.getInstance().getObjectMapper().readTree(finalSchemaInputStream);
+                finalSchemaInputStream.close();
+
+                //store schema colections, only SQL related to these will be parsed
+                Iterator<String> importSchemaCollectionIterator;
+                if (importSchema.has("collections")) {
+                    importSchemaCollectionIterator = importSchema.get("collections").fieldNames();
+                } else {
+                    throw new ImportException("Schema document " + importSchemaFileName + " is missing field 'collections'!");
+                }
+                Iterator<String> importSchemaEdgeCollectionIterator = importSchema.get("edgeCollections").fieldNames();
+                if (importSchema.has("edgeCollections")) {
+                    importSchemaEdgeCollectionIterator = importSchema.get("edgeCollections").fieldNames();
+                } else {
+                    throw new ImportException("Schema document " + importSchemaFileName + " is missing field `edgeCollections`!");
+                }
+                Iterator<String> importSchemaGeneratedEdgeCollectionIterator;
+                if (importSchema.has("generatedEdgeCollections")) {
+                    importSchemaGeneratedEdgeCollectionIterator = importSchema.get("generatedEdgeCollections").fieldNames();
+                } else {
+                    throw new ImportException("Schema document " + importSchemaFileName + " is missing field `generatedEdgeCollections`!");
+                }
+                Iterator<String> finalSchemaCollectionIterator;
+                if (finalSchema.has("collections")) {
+                    finalSchemaCollectionIterator = finalSchema.get("collections").fieldNames();
+                } else {
+                    throw new ImportException("Final schema document " + finalSchemaFileName + " is missing field 'collections'!");
+                }
+                Iterator<String> finalSchemaEdgeCollectionIterator;
+                if (finalSchema.has("edgeCollections")) {
+                    finalSchemaEdgeCollectionIterator = finalSchema.get("edgeCollections").fieldNames();
+                } else {
+                    throw new ImportException("Final schema document " + finalSchemaFileName + " is missing field 'edgeCollections'!");
+                }
+                HashSet<String> importSchemaCollections = new HashSet<>();
+                importSchemaCollectionIterator.forEachRemaining(importSchemaCollections::add);
+
+                HashSet<String> importSchemaEdgeCollections = new HashSet<>();
+                importSchemaEdgeCollectionIterator.forEachRemaining(importSchemaEdgeCollections::add);
+
+                HashSet<String> importSchemaGeneratedEdgeCollections = new HashSet<>();
+                importSchemaGeneratedEdgeCollectionIterator.forEachRemaining(importSchemaGeneratedEdgeCollections::add);
+
+                HashSet<String> finalSchemaCollections = new HashSet<>();
+                finalSchemaCollectionIterator.forEachRemaining(finalSchemaCollections::add);
+
+                HashSet<String> finalSchemaEdgeCollections = new HashSet<>();
+                finalSchemaEdgeCollectionIterator.forEachRemaining(finalSchemaEdgeCollections::add);
+                //set final schemas
+                for (String finalDocumentCollection : finalSchemaCollections) {
+                    String schemaJsonString = finalSchema.get("collections").get(finalDocumentCollection).toString();
+                    ImportUtil.setSchema(finalDocumentCollection, schemaJsonString);
+                }
+                for (String finalEdgeCollection : finalSchemaEdgeCollections) {
+                    String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
+                    ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
+                }
+                // Update Lexemes
+                if (finalSchemaCollections.contains("Lexeme")) {
+                    System.out.println("Adding meanings to lexemes:");
+                    repository.insertMeanings();
+                    System.out.println("Adding usage examples to lexemes:");
+                    repository.insertUsageExamples();
+                    System.out.println("Adding etymologies to lexemes:");
+                    repository.insertEtymologies();
+                    System.out.println("Setting language:");
+                    repository.setRomanianLanguage();
+                }
+                // Update Relation
+                System.out.println("Updating Relation: ");
+                if (finalSchemaEdgeCollections.contains("Relation")) {
+                    ImportUtil.createCollection("RelationTemp", true, null);
+                    System.out.println("Updating Relation collection:");
+                    repository.createRelationTemp();
+                    //Replace Relation with newly built collection
+                    ImportUtil.deleteCollection("Relation");
+                    ImportUtil.renameCollection("RelationTemp", "Relation");
+                }
+                //Remove collections not in final schema
+                System.out.println("Removing collections not in final schema:");
+                for (String importSchemaCollection : importSchemaCollections) {
+                    if (!finalSchemaCollections.contains(importSchemaCollection)) {
+                        ImportUtil.deleteCollection(importSchemaCollection);
+                    }
+                }
+                for (String importSchemaEdgeCollection : importSchemaEdgeCollections) {
+                    if (!finalSchemaEdgeCollections.contains(importSchemaEdgeCollection)) {
+                        ImportUtil.deleteCollection(importSchemaEdgeCollection);
+                    }
+                }
+                for (String importSchemaGeneratedEdgeCollection : importSchemaGeneratedEdgeCollections) {
+                    ImportUtil.deleteCollection(importSchemaGeneratedEdgeCollection);
+                }
+                //Unset attributes not in final schema
+                for (String finalCollection : finalSchemaCollections) {
+                    for (Iterator<String> it = importSchema.get("collections").get(finalCollection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
+                        String field = it.next();
+                        if (!finalSchema.get("collections").get(finalCollection).get("rule").get("properties").has(field)) {
+                            System.out.println("Unsetting attribute " + field + " in collection " + finalCollection);
+                            repository.unsetAttribute(finalCollection, field);
+                        }
+                    }
+                }
+                System.out.println("Import optimization complete!");
+                return new ResponseEntity<>("Import optimization complete", HttpStatus.OK);
+            }
+            catch(Exception e) {
+                importing = false;
+                ImportUtil.deleteCollections(repository.getCollections());
+                throw e;
+            }
         }
     }
 

@@ -14,7 +14,7 @@
             "description": "Base form of the word, without accent",
             "type": "string"
           },
-          "hyphenatiions": {
+          "hyphenations": {
             "description": "Comma-separated list of the lexeme's hyphenations. Can be empty",
             "type": "string"
           },
@@ -22,28 +22,35 @@
             "description": "Array containing meanings of lexeme",
             "type": "array",
             "items": {
+              "type": "string"
+            }
+          },
+          "etymologies": {
+            "description": "Array containing etymologies of lexemes, paired with a tag describing their origin",
+            "type": "array",
+            "items": {
               "type": "object",
               "properties": {
-                "type": {
-                  "description": "1 - (proper) meaning, 2 - etymology, 3 - a usage example from literature, 4 - comment or diff from its parent meaning., 5 - compound expression meaning",
-                  "type": "string",
-                  "enum": [
-                    "proper_meaning",
-                    "etymology",
-                    "usage_example",
-                    "comment_or_diff",
-                    "compound_expression_meaning"
-                  ]
+                "originalWord": {
+                  "type": "string"
                 },
-                "internalRep": {
+                "tag": {
                   "type": "string"
                 }
               }
             }
           },
+          "usageExamples": {
+            "description": "Array of sentences using lexemes",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "language": {
             "description": "ISO 639-1 language code",
-            "type": "string"
+            "type": "string",
+            "enum": ["ro"]
           }
         },
         "level": "strict",
@@ -56,7 +63,7 @@
         "schema": {
           "rule": {
             "title": "Relation",
-            "description": "Relation between synonyms, diminutives, augmentatives, diminutives",
+            "description": "Relation between lexemes: synonyms, diminutives, augmentatives, diminutives",
             "type": "object",
             "properties": {
               "type": {

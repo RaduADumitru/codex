@@ -20,7 +20,7 @@ services:
       test: curl -f -u root:openSesame http://localhost:8529/_api/version || exit 1
       timeout: 5s
       interval: 10s
-      retries: 3
+      retries: 10
     volumes:
       - arangodb_data_container:/var/lib/arangodb3
   app:

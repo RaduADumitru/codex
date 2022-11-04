@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 /* Documentation: https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table*/
 @Document("Lexeme")
 public class Lexeme {
+    //Unused code below
 
     @Id // db document field: _key
     private String id;

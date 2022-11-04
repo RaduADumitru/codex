@@ -14,6 +14,10 @@
             "description":"Base form of the word",
             "type":"string"
           },
+          "formUtf8General": {
+            "description":"UTF-8 form",
+            "type":"string"
+          },
           "hyphenations":{
             "description":"Comma-separated list of the lexeme's hyphenations. Can be empty",
             "type":"string"
@@ -28,9 +32,7 @@
         "title":"Entry",
         "description":"An Entry is a unit of meaning. It is a container for one or more lexemes, definitions, and meaning trees.",
         "type":"object",
-        "properties":{
-
-        }
+        "properties":{}
       },
       "level":"strict",
       "message":"Entry could not be inserted!"
@@ -40,9 +42,7 @@
         "title":"Tree",
         "description":"Trees are containers for meaning hierarchies (see the Meaning table for details).",
         "type":"object",
-        "properties":{
-
-        }
+        "properties":{}
       },
       "level":"strict",
       "message":"Tree could not be inserted!"

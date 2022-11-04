@@ -4,12 +4,13 @@ import com.arangodb.springframework.annotation.Query;
 import com.arangodb.springframework.repository.ArangoRepository;
 import org.example.codex.model.Lexeme;
 import org.example.codex.responses.EdgeResponse;
+import org.example.codex.responses.EtymologyResponse;
 import org.example.codex.responses.KeyTypeResponse;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface LexemeAndSystemRepository extends ArangoRepository<Lexeme, String> {
+public interface QueryRepository extends ArangoRepository<Lexeme, String> {
     @Query("""
                   // returns all words at a Levenshtein distance maximum of @dist from @word
                   for lexeme in Lexeme
@@ -82,7 +83,7 @@ public interface LexemeAndSystemRepository extends ArangoRepository<Lexeme, Stri
     let etymology_array = (
     for etymology in etymologies
     for v, e, p in 1..1 outbound etymology ObjectTag
-    return {original_word: etymology.internalRep, origin: p.vertices[1].value}
+    return {originalWord: etymology.internalRep, tag: p.vertices[1].value}
     )
     update { _key: l._key, etymologies: etymology_array} in Lexeme
 """)
@@ -329,7 +330,63 @@ update {_key: l._key, language: "ro"} in Lexeme
     void setRomanianLanguage();
     @Query("""
 for obj in @@collection
-replace obj with unset(obj, @field)
+replace obj with unset(obj, @field) in @@collection
 """)
     void unsetAttribute(@Param("@collection") String collection, @Param("field") String field);
+    @Query("""
+let start_lexemes = (
+for l in Lexeme
+filter l.@form == @word
+return l)
+for l in start_lexemes
+//words with given relationship are neighbors as described by Relation edge collection
+for v, e, p in 1..1 any l Relation
+    filter p.edges[0].type == @type
+    return distinct p.vertices[1].@form
+""")
+    List<String> optimizedGetLexemesWithRelation(@Param("word") String word, @Param("form") String form, @Param("type") String type);
+    @Query("""
+let start_lexemes = (
+for l in Lexeme
+filter l.@form == @word
+return l)
+let result = (
+for l in start_lexemes
+return distinct l.meanings
+)
+//returns array of arrays, which will be transformed into single array by flatten()
+let result_array = unique(flatten(result))
+for elem in result_array
+return elem
+""")
+    List<String> optimizedGetMeanings(@Param("word") String word, @Param("form") String form);
+    @Query("""
+let start_lexemes = (
+for l in Lexeme
+filter l.@form == @word
+return l)
+let result = (
+for l in start_lexemes
+return distinct l.usageExamples
+)
+//returns array of arrays, which will be transformed into single array by flatten()
+let result_array = unique(flatten(result))
+for elem in result_array
+return elem
+""")
+    List<String> optimizedGetUsageExamples(@Param("word") String word, @Param("form") String form);
+    @Query("""
+let start_lexemes = (
+for l in Lexeme
+filter l.@form == @word
+return l)
+let result = (
+for l in start_lexemes
+return distinct l.etymologies
+)
+let result_array = unique(flatten(result))
+for elem in result_array
+return elem
+""")
+    List<EtymologyResponse> optimizedGetEtymologies(@Param("word") String word, @Param("form") String form);
 }

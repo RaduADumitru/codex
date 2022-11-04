@@ -1,8 +1,8 @@
 package org.example.codex.enums;
 public enum LexemeForm {
     ACCENT("form"),
-    NOACCENT("formNoAccent"),
-    UTF8("formUtf8General");
+    NOACCENT("formNoAccent");
+    //corresponding field in database
     final String field;
 
     LexemeForm(String field) {

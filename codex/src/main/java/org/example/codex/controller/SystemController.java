@@ -1,7 +1,7 @@
 package org.example.codex.controller;
 
 import org.example.codex.forms.CollectionForm;
-import org.example.codex.repository.LexemeAndSystemRepository;
+import org.example.codex.repository.QueryRepository;
 import org.example.codex.responses.EdgeResponse;
 import org.example.codex.responses.KeyTypeResponse;
 import org.example.codex.responses.Schema;
@@ -14,9 +14,9 @@ import java.util.List;
 @RestController
 @RequestMapping("codex/system")
 public class SystemController {
-    private final LexemeAndSystemRepository repository;
+    private final QueryRepository repository;
 
-    public SystemController(LexemeAndSystemRepository repository) {
+    public SystemController(QueryRepository repository) {
         this.repository = repository;
     }
     @GetMapping("schema/collections")

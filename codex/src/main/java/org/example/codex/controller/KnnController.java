@@ -5,7 +5,7 @@ import org.example.codex.enums.LexemeForm;
 import org.example.codex.enums.NgramDistance;
 import org.example.codex.forms.DistanceForm;
 import org.example.codex.forms.NgramForm;
-import org.example.codex.repository.LexemeAndSystemRepository;
+import org.example.codex.repository.QueryRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +18,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/codex/knn")
 public class KnnController {
-    private final LexemeAndSystemRepository repository;
+    private final QueryRepository repository;
 
-    public KnnController(LexemeAndSystemRepository repository) {
+    public KnnController(QueryRepository repository) {
         this.repository = repository;
     }
     @PostMapping("editdistance")
