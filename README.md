@@ -42,7 +42,7 @@ Endpoints for searches have a number of similar fields: `wordform` represents th
 * `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
 * `codex/import/version`: GET - returns ArangoDB database version
 
-### Known issues:
+### Known issues/limitations
 * `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by setting the server option `--transaction.streaming-idle-timeout` to the maximum of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split large transactions into smaller ones, such as by increasing the `pageCount` when importing.
 ## TODO:
 * performance tests
