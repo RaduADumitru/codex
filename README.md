@@ -42,6 +42,16 @@ Endpoints for searches have a number of similar fields: `wordform` represents th
 * `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
 * `codex/import/version`: GET - returns ArangoDB database version
 
+### Performance tests
+The folder `tests` contains a number of Jmeter performance / load tests. 
+Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively.
+Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a start-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
+
+To start one of the tests, run the following command:
+
+`sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
+
+where `testname` is the name of the test's directory
 ### Known issues/limitations
 * `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by setting the server option `--transaction.streaming-idle-timeout` to the maximum of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split large transactions into smaller ones, such as by increasing the `pageCount` when importing.
 ## TODO:
