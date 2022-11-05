@@ -51,7 +51,10 @@ To start one of the tests, run the following command:
 
 `sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
 
-where `testname` is the name of the test's directory
+where `testname` is the name of the test's directory.
+
+This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
+
 ### Known issues/limitations
 * `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by setting the server option `--transaction.streaming-idle-timeout` to the maximum of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split large transactions into smaller ones, such as by increasing the `pageCount` when importing.
 ## TODO:
