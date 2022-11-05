@@ -517,7 +517,7 @@ public class ImportController {
                             else {
                                 if (line.startsWith("CREATE")) {
                                     String createCollection = StringUtils.substringBetween(line, "CREATE TABLE `", "`");
-                                    System.out.println("Parsing Create statement for table: " + createCollection);
+                                    System.out.println("Parsing SQL for table: " + createCollection);
                                     if (importSchemaCollections.contains(createCollection) || importSchemaEdgeCollections.contains(createCollection)) {
                                         if (importSchemaCollections.contains(createCollection)) {
                                             System.out.println("Found document collection " + createCollection + " in import schema");

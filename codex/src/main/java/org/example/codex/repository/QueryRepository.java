@@ -91,6 +91,7 @@ public interface QueryRepository extends ArangoRepository<Lexeme, String> {
     @Query("""
 let page = (
    for l in Lexeme
+   sort l._key asc
    limit @skip, @pagesize
    return l
   )
@@ -143,6 +144,7 @@ let page = (
     @Query("""
    let page = (
    for l in Lexeme
+   sort l._key asc
    limit @skip, @pagesize
    return l
    )
@@ -186,6 +188,7 @@ let page = (
     @Query("""
        let page = (
    for l in Lexeme
+   sort l._key asc
    limit @skip, @pagesize
    return l)
         //insert array of usage examples into each lexeme
@@ -271,6 +274,7 @@ for pair in relation_tree_pair
 let translatemap = {"1": "synonym", "2": "antonym", "3": "diminutive", "4": "augmentative"}
 let page = (
    for l in Lexeme
+   sort l._key asc
    limit @skip, @pagesize
    return l)
         //insert array of usage examples into each lexeme
@@ -438,6 +442,7 @@ for obj in @@attributecollection
     @Query("""
 let page = (
 for obj in @@attributecollection
+sort obj._key asc
 //get next @pagesize elements starting from @skip
 limit @skip, @pagesize
 return obj
@@ -450,7 +455,7 @@ for obj in page
     let tovalue = concat_separator("", @tocollection, "/", toattributevalue)
     insert { _from: fromvalue, _to: tovalue } into @@generatedcollection
     """)
-    void insertIntoGeneratedCollectionWithPagination(@Param("fromcollection") String fromCollection, @Param("tocollection") String toCollection, @Param("@attributecollection") String attributeCollection, @Param("@generatedcollection") String generatedCollection, @Param("fromattribute") String fromAttribute, @Param("toattribute") String toAttribute, @Param("pagesize") Integer pagesize, @Param("skip") Integer skip);
+    void insertIntoGeneratedCollectionWithPagination(@Param("fromcollection") String fromCollection, @Param("tocollection") String toCollection, @Param("@attributecollection") String attributeCollection, @Param("@generatedcollection") String generatedCollection, @Param("fromattribute") String fromAttribute, @Param("toattribute") String toAttribute, @Param("skip") Integer skip, @Param("pagesize") Integer pagesize);
     @Query("""
 for l in Lexeme
 //language codes: ISO 639-1
