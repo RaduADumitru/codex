@@ -89,6 +89,39 @@ public interface QueryRepository extends ArangoRepository<Lexeme, String> {
 """)
     void insertEtymologies();
     @Query("""
+let page = (
+   for l in Lexeme
+   limit @skip, @pagesize
+   return l
+  )
+    //insert array of etymologies into each lexeme
+    for l in page
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3]
+        )
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let meanings = (
+    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //type 1: etymology
+        return distinct v
+        )
+    let etymologies = (
+    for m in meanings
+    filter m.type == 1
+    return m
+    )
+    let etymology_array = (
+    for etymology in etymologies
+    for v, e, p in 1..1 outbound etymology ObjectTag
+    return {originalWord: etymology.internalRep, tag: p.vertices[1].value}
+    )
+    update { _key: l._key, etymologies: etymology_array} in Lexeme
+""")
+    void insertEtymologiesWithPagination(@Param("skip") Integer skip, @Param("pagesize") Integer pagesize);
+    @Query("""
     //insert array of meanings into each lexeme
     for l in Lexeme
     //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
@@ -108,6 +141,30 @@ public interface QueryRepository extends ArangoRepository<Lexeme, String> {
 """)
     void insertMeanings();
     @Query("""
+   let page = (
+   for l in Lexeme
+   limit @skip, @pagesize
+   return l
+   )
+    //insert array of meanings into each lexeme
+    for l in page
+    //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        //meaning root has no parent
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3])
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let meanings = (    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
+        filter v.internalRep != null and v.internalRep != ""
+        filter v.type == 0 or v.type == 5
+        return distinct v.internalRep)
+    update {_key: l._key, meanings: meanings} in Lexeme
+""")
+    void insertMeaningsWithPagination(@Param("skip") Integer skip, @Param("pagesize") Integer pagesize);
+    @Query("""
     //insert array of usage examples into each lexeme
     for l in Lexeme
     //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
@@ -126,6 +183,31 @@ public interface QueryRepository extends ArangoRepository<Lexeme, String> {
     update {_key: l._key, usageExamples: examples} in Lexeme
 """)
     void insertUsageExamples();
+    @Query("""
+       let page = (
+   for l in Lexeme
+   limit @skip, @pagesize
+   return l)
+        //insert array of usage examples into each lexeme
+    for l in page
+    //Find roots of meaning tree : Lexeme <- Entry <- Tree <- Root
+    LET meaning_tree_roots = (
+        for v, e, p in 1..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+        //meaning root has no parent
+        filter p.vertices[3].parentId == 0
+        return p.vertices[3])
+    //Traverse meaning tree (parent -> child), returning all meanings of type given
+    let examples = (    
+    for root in meaning_tree_roots
+        for v, e, p in 0..10 outbound root MeaningMeaning
+        //types: 0) proper meaning, 1) etymology, 2) usage example from literature, 3) comment, 4) diff from parent meaning, 5) compound expression meaning
+        filter v.internalRep != null and v.internalRep != ""
+        filter v.type == 2
+        return distinct v.internalRep
+        )
+    update {_key: l._key, usageExamples: examples} in Lexeme
+""")
+    void insertUsageExamplesWithPagination(@Param("skip") Integer skip, @Param("pagesize") Integer pagesize);
     @Query("""
 // Get Lexemes with relation to input (synonyms, antonyms, diminutives, augmentatives)
 //Start: lexemes with same form as input word
@@ -159,7 +241,8 @@ for meaning in relation_meaning
 """)
     Iterable<String> getLexemesWithRelation(@Param("word") String word, @Param("relationType") Integer relationType, @Param("form") String form);
     @Query("""
-//Similar to above, but get full lexeme and insert into relation
+//Similar to above, but get full lexeme and insert into Relation
+//replace numeric codes with corresponding relation
 let translatemap = {"1": "synonym", "2": "antonym", "3": "diminutive", "4": "augmentative"}
 for l in Lexeme
 // Get to roots of meaning trees of input : Lexeme <- Entry <- Tree <- Root
@@ -184,10 +267,40 @@ for pair in relation_tree_pair
     insert {_from: l._id, _to: last(p.vertices)._id, type: translate(type_string, translatemap)} into RelationTemp
 """)
     void createRelationTemp();
+    @Query("""
+let translatemap = {"1": "synonym", "2": "antonym", "3": "diminutive", "4": "augmentative"}
+let page = (
+   for l in Lexeme
+   limit @skip, @pagesize
+   return l)
+        //insert array of usage examples into each lexeme
+for l in page
+// Get to roots of meaning trees of input : Lexeme <- Entry <- Tree <- Root
+LET meaning_roots = (
+    for v, e, p in 3..3 inbound l EntryLexeme, TreeEntry, MeaningTree
+    return last(p.vertices)
+    )
+//meanings with relation to other meaning tree: parent -> child, (if relation exists) child -[relation]> tree
+LET relation_tree_pair = (
+    for root in meaning_roots
+        for v, e, p in 1..10 outbound root MeaningMeaning, Relation
+//        //types 1) synonym, 2) antonym, 3) diminutive, 4) augmentative
+        FILTER last(p.edges).type != null
+        LET pos = length(p.vertices) - 2
+        //Eliminate compound expressions (type 5) containing original word; they have different meanings
+        filter p.vertices[pos].type != 5
+        collect tree = last(p.vertices), relation_type = last(p.edges).type
+        return {tree: tree, relationType: relation_type})
+for pair in relation_tree_pair
+    for v, e, p in 2..2 outbound pair.tree TreeEntry, EntryLexeme
+    let type_string = to_string(pair.relationType)
+    insert {_from: l._id, _to: last(p.vertices)._id, type: translate(type_string, translatemap)} into RelationTemp
+""")
+    void createRelationTempWithPagination(@Param("skip") Integer skip, @Param("pagesize") Integer pagesize);
 
     @Query("""
 for col in collections()
-filter not starts_with(col.name, "_") //eliminate system collections
+filter not starts_with(col.name, "_") //do not consider system collections
 return col.name
 """)
     List<String> getCollections();
@@ -323,6 +436,22 @@ for obj in @@attributecollection
     """)
     void insertIntoGeneratedCollection(@Param("fromcollection") String fromCollection, @Param("tocollection") String toCollection, @Param("@attributecollection") String attributeCollection, @Param("@generatedcollection") String generatedCollection, @Param("fromattribute") String fromAttribute, @Param("toattribute") String toAttribute);
     @Query("""
+let page = (
+for obj in @@attributecollection
+//get next @pagesize elements starting from @skip
+limit @skip, @pagesize
+return obj
+)
+for obj in page
+    //bug with standard concat() function, so use concat_separator with empty separator as workaround
+    let fromattributevalue = obj.@fromattribute
+    let fromvalue = concat_separator("", @fromcollection, "/", fromattributevalue)
+    let toattributevalue = obj.@toattribute
+    let tovalue = concat_separator("", @tocollection, "/", toattributevalue)
+    insert { _from: fromvalue, _to: tovalue } into @@generatedcollection
+    """)
+    void insertIntoGeneratedCollectionWithPagination(@Param("fromcollection") String fromCollection, @Param("tocollection") String toCollection, @Param("@attributecollection") String attributeCollection, @Param("@generatedcollection") String generatedCollection, @Param("fromattribute") String fromAttribute, @Param("toattribute") String toAttribute, @Param("pagesize") Integer pagesize, @Param("skip") Integer skip);
+    @Query("""
 for l in Lexeme
 //language codes: ISO 639-1
 update {_key: l._key, language: "ro"} in Lexeme
@@ -389,4 +518,8 @@ for elem in result_array
 return elem
 """)
     List<EtymologyResponse> optimizedGetEtymologies(@Param("word") String word, @Param("form") String form);
+    @Query("""
+return count(@@col)
+""")
+    Integer getCollectionDocumentCount(@Param("@col") String collection);
 }

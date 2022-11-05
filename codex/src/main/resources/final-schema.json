@@ -41,7 +41,7 @@
             }
           },
           "usageExamples": {
-            "description": "Array of sentences using lexemes",
+            "description": "Array of phrases containing lexeme",
             "type": "array",
             "items": {
               "type": "string"

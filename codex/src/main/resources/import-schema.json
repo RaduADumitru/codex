@@ -14,10 +14,6 @@
             "description":"Base form of the word",
             "type":"string"
           },
-          "formUtf8General": {
-            "description":"UTF-8 form",
-            "type":"string"
-          },
           "hyphenations":{
             "description":"Comma-separated list of the lexeme's hyphenations. Can be empty",
             "type":"string"

@@ -16,7 +16,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.example.codex.enums.ArangoDataType;
 import org.example.codex.enums.SqlDataType;
 import org.example.codex.exceptions.ImportException;
+import org.example.codex.forms.CollectionCountForm;
 import org.example.codex.forms.ImportForm;
+import org.example.codex.forms.OptimizeImportForm;
+import org.example.codex.model.Lexeme;
 import org.example.codex.repository.QueryRepository;
 import org.example.codex.util.ColumnData;
 import org.example.codex.util.ImportUtil;
@@ -37,7 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
-@PropertySource(value = "classpath:application.properties")
+
 @PropertySource(value = "classpath:arangodb.properties")
 @RestController
 @RequestMapping("/codex/import/")
@@ -46,9 +49,6 @@ public class ImportController {
     private final QueryRepository repository;
 
     //Get configuration
-
-    @Value("${server.port}")
-    private Integer serverPort;
     @Value("${arangodb.host}")
     private String arangoDbHost;
     @Value("${arangodb.port}")
@@ -58,6 +58,7 @@ public class ImportController {
     @Value("${arangodb.password}")
     private String arangoDbPassword;
     private Boolean importing = false;
+    private final String downloadLink = "https://dexonline.ro/static/download/dex-database.sql.gz";
     public ImportController(QueryRepository repository) {
         this.repository = repository;
     }
@@ -83,6 +84,10 @@ public class ImportController {
     @PostMapping("import")
     ResponseEntity<String> databaseImport(@org.springframework.web.bind.annotation.RequestBody ImportForm importForm) throws IOException, JSQLParserException, ImportException {
         boolean completeImport = importForm.isComplete();
+        Integer pageCount = importForm.getPageCount();
+        if(pageCount < 0) {
+            throw new IllegalArgumentException("Page count must be a positive integer!");
+        }
         if(importing) {
             throw new ImportException("Import already in progress!");
         }
@@ -184,7 +189,7 @@ public class ImportController {
                 String insertRequestBodyHeader = null;
 
                 //load archived database SQL script from remote link
-                URL url = new URL("https://dexonline.ro/static/download/dex-database.sql.gz");
+                URL url = new URL(downloadLink);
 
                 //create statements will be built starting with lines beginning with "CREATE" and ending with ";"
                 boolean buildingCreateStatement = false;
@@ -198,8 +203,8 @@ public class ImportController {
 
                 try(InputStream stream = new GZIPInputStream(url.openStream()); Scanner sc = new Scanner(stream, StandardCharsets.UTF_8)) {
                     // traverse each line of script;
-                    // starting from lines containing keyword CREATE, Create statements will be built after reaching ;, then parsed and executed according to schema
-                    //lines containing INSERT will be treated as insert statements, parsed and executed: attributes in schema will be inserted
+                    // starting from lines containing keyword CREATE, Create statements will be built until reaching ;, then parsed and executed according to schema
+                    //lines containing INSERT will be treated as insert statements, and parsed if collection is in schema: attributes in schema will be inserted
                     while (sc.hasNextLine()) {
                         String line = sc.nextLine();
                         if (buildingCreateStatement) {
@@ -213,7 +218,6 @@ public class ImportController {
                                 //Get collection name: will be surrounded by apostrophes, which need to be removed
                                 currentCollectionName = createTable.getTable().getName().replace("`", "");
                                 //if collection is in schema, create it as normal collection
-                                System.out.println("CREATE " + currentCollectionName + " FINISHED PARSING");
                                 isDocumentCollection = importSchemaCollections.contains(currentCollectionName);
                                 isEdgeCollection = importSchemaEdgeCollections.contains(currentCollectionName);
                                 if (isDocumentCollection && isEdgeCollection) {
@@ -291,7 +295,7 @@ public class ImportController {
                                     }
                                     //Start building insert request body: first row represents column names inserted
                                     ArrayList<String> insertColumns = new ArrayList<>();
-                                    //key will always be imported first
+                                    //_key will always be imported first, or _from and _to in case of edge collections
                                     if (isDocumentCollection) {
                                         insertColumns.add("_key");
                                     } else if (isEdgeCollection) {
@@ -301,27 +305,11 @@ public class ImportController {
                                     for (ColumnData colData : colDataMap.get(currentCollectionName)) {
                                         insertColumns.add(colData.getColumnName());
                                     }
-//                        insertRequestBody.append(JSONArray.toJSONString(insertColumns)).append("\n");
                                     insertRequestBodyHeader = JSONArray.toJSONString(insertColumns);
-//                        System.out.println("Columns of " + currentCollectionName + ": " + insertRequestBody);
-                                    System.out.println("Collection " + currentCollectionName + " insert header: " + insertRequestBodyHeader);
                                 }
-//                    System.out.println(String.valueOf(createStatement));
-//                    //Start building insert request body: first row represents column names inserted
-//                    ArrayList<String> insertColumns = new ArrayList<>();
-//                    //key will always be imported first
-//                    insertColumns.add("_key");
-//                    for(ColumnData colData : colDataMap.get(currentCollectionName)) {
-//                        insertColumns.add(colData.getColumnName());
-//                    }
-//                    insertRequestBody.append(JSONArray.toJSONString(insertColumns)).append("\n");
                                 //reset built statement
                                 createStatement = new StringBuilder();
                                 buildingCreateStatement = false;
-                                System.out.println("CREATE: " + createTable.getTable().getName());
-//                            System.out.println("SQL COL MAP: " + sqlColumnPositionMap);
-//                            System.out.println("COL DATA MAP: " + colDataMap);
-//                    currentCollectionName = null;
                             }
                         }
 //            //case when create statement is not being built
@@ -360,7 +348,6 @@ public class ImportController {
 
 
                                     if (itemsList instanceof ExpressionList) {
-//                            List<Expression> defaultExpressions = new ArrayList<>();
                                         List<Expression> rowList = ((ExpressionList) itemsList).getExpressions();
                                         for (Expression row : rowList) {
                                             //where values for a row will be stored
@@ -379,14 +366,14 @@ public class ImportController {
                                                 //if document collection, always store id, which will be first element
                                             } else {
                                                 if(currentCollectionName.equals("ObjectTag")) {
-                                                    //swap values for object type and tag id, to match column definition swap
+                                                    //swap values for object type and tag id, to match swap of column definition
                                                     Collections.swap(rowExpressionList, 2, 3);
                                                 }
                                                 // add _from and _to values, which will be second and third expressions
                                                 Expression fromExpression = rowExpressionList.get(1);
                                                 Expression toExpression = rowExpressionList.get(2);
                                                 if(currentCollectionName.equals("ObjectTag")) {
-                                                    //ObjectTag collectiom describes relations between multiple pairs of collections, according to collection type
+                                                    //ObjectTag collection describes relations between multiple pairs of collections, according to collection type
                                                     Expression objectTypeExpression = rowExpressionList.get(3);
                                                     if(objectTypeExpression instanceof LongValue) {
                                                         long objectTypeValue = ((LongValue)objectTypeExpression).getValue();
@@ -498,14 +485,12 @@ public class ImportController {
                                                     throw new ImportException("SQL parsing error: type for expression + " + valueExpression + " in collection " + currentCollectionName + "could not be determined!");
                                                 }
                                             }
-//                                        System.out.println(expressionValues);
                                             insertRequestBody.append('\n').append(JSONArray.toJSONString(expressionValues));
                                         }
                                     } else {
                                         throw new ImportException("Items List " + itemsList + " not ExpressionList!");
                                     }
                                     String jsonString = insertRequestBody.toString();
-//                                System.out.println("INSERT INTO " + currentCollectionName + ": " + jsonString);
                                     RequestBody insertFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
                                     String insertRequestUrl = ImportUtil.getInstance().getBaseRequestUrl() + "import?collection=" + currentCollectionName + "&complete=false&details=true";
                                     Request insertRequest = new Request.Builder()
@@ -556,6 +541,10 @@ public class ImportController {
                 System.out.println("Creating generated collections:");
 
                 //Create generated collections
+
+                //store collection document counts here, to avoid repeated queries
+                HashMap<String, Integer> documentCountCache = new HashMap<>();
+
                 for(String generatedCollection : importSchemaGeneratedEdgeCollections) {
                     System.out.println("Generating collection " + generatedCollection);
                     String attributeCollection = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("attributeCollection").asText();
@@ -567,75 +556,35 @@ public class ImportController {
                     String toAttribute = importSchema.get("generatedEdgeCollections").get(generatedCollection).get("to").get("attribute").asText();
 
                     ImportUtil.createCollection(generatedCollection, true, null);
-                    repository.insertIntoGeneratedCollection(fromCollection, toCollection, attributeCollection, generatedCollection, fromAttribute, toAttribute);
+
+                    if(pageCount == 0) {
+                        repository.insertIntoGeneratedCollection(fromCollection, toCollection, attributeCollection, generatedCollection, fromAttribute, toAttribute);
+                    }
+                    else {
+                        // insert into generated edge collection with pagination
+                        if(!documentCountCache.containsKey(attributeCollection)) {
+                            documentCountCache.put(attributeCollection, repository.getCollectionDocumentCount(attributeCollection));
+                        }
+                        Integer documentCount = documentCountCache.get(attributeCollection);
+                        int pageSize = (documentCount / pageCount) + 1;
+                        int skip = 0;
+                        for(int i = 0; i < pageCount; i++) {
+                            System.out.println("Inserting into " + generatedCollection + " (page " + (i + 1) + "/" + pageCount + ")");
+                            repository.insertIntoGeneratedCollectionWithPagination(fromCollection, toCollection, attributeCollection, generatedCollection, fromAttribute, toAttribute, skip, pageSize);
+                            skip += pageSize;
+                        }
+                    }
                 }
                 System.out.println("Generated edge collections created!");
                 importing = false;
-//                if(completeImport) {
-//                    //set final schemas
-//                    for(String finalDocumentCollection : finalSchemaCollections) {
-//                        String schemaJsonString = finalSchema.get("collections").get(finalDocumentCollection).toString();
-//                        ImportUtil.setSchema(finalDocumentCollection, schemaJsonString);
-//                    }
-//                    for(String finalEdgeCollection : finalSchemaEdgeCollections) {
-//                        String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
-//                        ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
-//                    }
-//                    // Update Lexemes
-//                    if(finalSchemaCollections.contains("Lexeme")) {
-//                        System.out.println("Adding meanings to lexemes:");
-//                        repository.insertMeanings();
-//                        System.out.println("Adding usage examples to lexemes:");
-//                        repository.insertUsageExamples();
-//                        System.out.println("Adding etymologies to lexemes:");
-//                        repository.insertEtymologies();
-//                        System.out.println("Setting language:");
-//                        repository.setRomanianLanguage();
-//                    }
-//                    // Update Relation
-//                    System.out.println("Updating Relation: ");
-//                    if(finalSchemaEdgeCollections.contains("Relation")) {
-//                        ImportUtil.createCollection("RelationTemp", true, null);
-//                        System.out.println("Updating Relation collection:");
-//                        repository.createRelationTemp();
-//                        //Replace Relation with newly built collection
-//                        ImportUtil.deleteCollection("Relation");
-//                        ImportUtil.renameCollection("RelationTemp", "Relation");
-//                    }
-//                    //Remove collections not in final schema
-//                    System.out.println("Removing collections not in final schema:");
-//                    for(String importSchemaCollection : importSchemaCollections) {
-//                        if(!finalSchemaCollections.contains(importSchemaCollection)) {
-//                            ImportUtil.deleteCollection(importSchemaCollection);
-//                        }
-//                    }
-//                    for(String importSchemaEdgeCollection : importSchemaEdgeCollections) {
-//                        if(!finalSchemaEdgeCollections.contains(importSchemaEdgeCollection)) {
-//                            ImportUtil.deleteCollection(importSchemaEdgeCollection);
-//                        }
-//                    }
-//                    for(String importSchemaGeneratedEdgeCollection : importSchemaGeneratedEdgeCollections) {
-//                        ImportUtil.deleteCollection(importSchemaGeneratedEdgeCollection);
-//                    }
-//                    //Unset attributes not in final schema
-//                    for(String finalCollection: finalSchemaCollections) {
-//                        for (Iterator<String> it = importSchema.get("collections").get(finalCollection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
-//                            String field = it.next();
-//                            if(!finalSchema.get("collections").get(finalCollection).get("rule").get("properties").has(field)) {
-//                                System.out.println("Unsetting attribute " + field + " in collection " + finalCollection);
-//                                repository.unsetAttribute(finalCollection, field);
-//                            }
-//                        }
-//                    }
-//                }
                 if(completeImport) {
-                    optimizePartialImport();
+                    optimizePartialImport(new OptimizeImportForm(pageCount));
                 }
             }
             catch(Exception e) {
                 //delete database content on errors
-                importing = false;
                 ImportUtil.deleteCollections(repository.getCollections());
+                importing = false;
                 throw e;
             }
             importing = false;
@@ -644,7 +593,11 @@ public class ImportController {
         }
     }
     @PostMapping("optimize")
-    ResponseEntity<String> optimizePartialImport() throws ImportException, IOException {
+    ResponseEntity<String> optimizePartialImport(@org.springframework.web.bind.annotation.RequestBody OptimizeImportForm optimizeImportForm) throws ImportException, IOException {
+        Integer pageCount = optimizeImportForm.getPageCount();
+        if(pageCount < 0) {
+            throw new IllegalArgumentException("Page count must be a positive integer!");
+        }
         if(importing) {
             throw new ImportException("Import already in progress!");
         }
@@ -723,26 +676,82 @@ public class ImportController {
                     String schemaJsonString = finalSchema.get("edgeCollections").get(finalEdgeCollection).get("schema").toString();
                     ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
                 }
+                HashMap<String, Integer> documentCountCache = new HashMap<>();
                 // Update Lexemes
                 if (finalSchemaCollections.contains("Lexeme")) {
+                    documentCountCache.put("Lexeme", repository.getCollectionDocumentCount("Lexeme"));
+
                     System.out.println("Adding meanings to lexemes:");
-                    repository.insertMeanings();
+                    if(pageCount == 0) {
+                        repository.insertMeanings();
+                    }
+                    else {
+                        // insert into generated edge collection with pagination
+                        Integer documentCount = documentCountCache.get("Lexeme");
+                        int pageSize = (documentCount / pageCount) + 1;
+                        int skip = 0;
+                        for(int i = 0; i < pageCount; i++) {
+                            System.out.println("Adding meanings to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                            repository.insertMeaningsWithPagination(skip, pageSize);
+                            skip += pageSize;
+                        }
+                    }
+
                     System.out.println("Adding usage examples to lexemes:");
-                    repository.insertUsageExamples();
+                    if(pageCount == 0) {
+                        repository.insertUsageExamples();
+                    }
+                    else {
+                        Integer documentCount = documentCountCache.get("Lexeme");
+                        int pageSize = (documentCount / pageCount) + 1;
+                        int skip = 0;
+                        for(int i = 0; i < pageCount; i++) {
+                            System.out.println("Adding usage examples to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                            repository.insertUsageExamplesWithPagination(skip, pageSize);
+                            skip += pageSize;
+                        }
+                    }
+
                     System.out.println("Adding etymologies to lexemes:");
-                    repository.insertEtymologies();
+                    if(pageCount == 0) {
+                        repository.insertEtymologies();
+                    }
+                    else {
+                        Integer documentCount = documentCountCache.get("Lexeme");
+                        int pageSize = (documentCount / pageCount) + 1;
+                        int skip = 0;
+                        for(int i = 0; i < pageCount; i++) {
+                            System.out.println("Adding etymologies to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                            repository.insertEtymologiesWithPagination(skip, pageSize);
+                            skip += pageSize;
+                        }
+                    }
                     System.out.println("Setting language:");
                     repository.setRomanianLanguage();
                 }
                 // Update Relation
                 System.out.println("Updating Relation: ");
                 if (finalSchemaEdgeCollections.contains("Relation")) {
-                    ImportUtil.createCollection("RelationTemp", true, null);
+                    ImportUtil.createCollection("RelationTemp", true, finalSchema.get("edgeCollections").get("Relation").get("schema").toString());
                     System.out.println("Updating Relation collection:");
-                    repository.createRelationTemp();
+                    if(pageCount == 0) {
+                        repository.createRelationTemp();
+                    }
+                    else {
+                        documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
+                        Integer documentCount = documentCountCache.get("Relation");
+                        int pageSize = (documentCount / pageCount) + 1;
+                        int skip = 0;
+                        for(int i = 0; i < pageCount; i++) {
+                            System.out.println("Updating Relation collection (page " + (i + 1) + "/" + pageCount + ")");
+                            repository.createRelationTempWithPagination(skip, pageSize);
+                            skip += pageSize;
+                        }
+                    }
                     //Replace Relation with newly built collection
                     ImportUtil.deleteCollection("Relation");
                     ImportUtil.renameCollection("RelationTemp", "Relation");
+                    documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
                 }
                 //Remove collections not in final schema
                 System.out.println("Removing collections not in final schema:");
@@ -773,31 +782,15 @@ public class ImportController {
                 return new ResponseEntity<>("Import optimization complete", HttpStatus.OK);
             }
             catch(Exception e) {
-                importing = false;
                 ImportUtil.deleteCollections(repository.getCollections());
+                importing = false;
                 throw e;
             }
         }
     }
 
-    @PostMapping("create")
-    ResponseEntity<String> createCollection() throws IOException {
-        ObjectNode jsonObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
-        jsonObject.put("name", "TestCol");
-        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(jsonObject);
-        RequestBody formBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
-        Request request = new Request.Builder()
-                .url("http://localhost:8529/_db/dex/_api/collection")
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .header("Authorization", ImportUtil.getInstance().getCredentials())
-                .post(formBody)
-                .build();
-        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(request);
-        Response response = call.execute();
-        String responseText = Objects.requireNonNull(response.body()).string();
-        response.close();
-        return new ResponseEntity<>(Objects.requireNonNull(responseText), HttpStatus.OK);
+    @PostMapping("count")
+    ResponseEntity<String> colCount(@org.springframework.web.bind.annotation.RequestBody CollectionCountForm collectionCountForm) {
+        return new ResponseEntity<>(repository.getCollectionDocumentCount(collectionCountForm.getCollection()).toString(), HttpStatus.OK);
     }
-
 }
