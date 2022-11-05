@@ -78,11 +78,9 @@ public class ImportUtil {
         }
         if(schema != null) {
             JsonNode schemaTree = ImportUtil.getInstance().getObjectMapper().readTree(schema);
-            System.out.println("SCHEMA TREE: " + schemaTree.toString());
             createRequestJsonObject.set("schema", schemaTree);
             }
         String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(createRequestJsonObject);
-//        System.out.println("Create request string: " + jsonString);
         RequestBody createFormBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
         Request createRequest = new Request.Builder()
                 .url(requestURL)
@@ -110,16 +108,6 @@ public class ImportUtil {
     }
     public static void deleteCollections(List<String> collections) throws IOException {
         for(String col : collections) {
-//            String deleteURL = ImportUtil.getInstance().getBaseRequestUrl() + "collection/" + col;
-//            Request deleteRequest = new Request.Builder()
-//                    .url(deleteURL)
-//                    .addHeader("Accept", "application/json")
-//                    .header("Authorization", ImportUtil.getInstance().getCredentials())
-//                    .delete()
-//                    .build();
-//            Call call = ImportUtil.getInstance().getOkHttpClient().newCall(deleteRequest);
-//            Response response = call.execute();
-//            response.close();
             deleteCollection(col);
         }
     }
@@ -139,7 +127,7 @@ public class ImportUtil {
                 .build();
         Call call = ImportUtil.getInstance().getOkHttpClient().newCall(setSchemaRequest);
         Response createResponse = call.execute();
-        System.out.println("Set final schema for collection " + collectionName + ": " + Objects.requireNonNull(createResponse.body()).string());
+        System.out.println("Set schema for collection " + collectionName + ": " + Objects.requireNonNull(createResponse.body()).string());
         createResponse.close();
     }
     public static void renameCollection(String oldName, String newName) throws IOException {
