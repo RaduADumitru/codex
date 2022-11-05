@@ -44,7 +44,7 @@ Endpoints for searches have a number of similar fields: `wordform` represents th
 
 ### Performance tests
 The folder `tests` contains a number of Jmeter performance / load tests. 
-Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively.
+Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively (default value is 1 for each).
 Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a start-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
 
 To start one of the tests, run the following command:
