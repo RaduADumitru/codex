@@ -92,8 +92,29 @@ Edge collection objects contain three fields: `schema` contains the aforemention
     },
 ~~~
 
-Inside the schema specification files, each document collection and edge collection contains an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated, throwing an error on any mismatches. 
+Inside the schema specification files, each document collection and edge collection contains an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated, throwing an error on any mismatches.
+
 Only the collections and attributes specified inside these fields will be imported. Collections and attributes can be specified only in the original import schema (in which case they will be used during the optimization phase, and then deleted), or specified in both schema files, in which case they will be preserved after optimization.
+
+For example, the SQL database contains the table `Definition` (described in the documentation [here](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Definition-table)). To add it to the import along with the attribute `internalRep` (the definition's text) and the attribute `status` (numeric code of 0, 1, 2, or 3) present as an SQL column, add the following to the `collections` of `import-schema.json`:
+~~~json
+"Definition": {
+      "rule": {
+        "properties": {
+          "internalRep": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2, 3]
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Definition could not be inserted!"
+    }
+~~~
+The level `strict` will stop the import if any imported documents do not respect this schema (if `internalRep` is not a string, or if `status` is not an integer with a value of 0, 1, 2 or 3). This collection will be imported during the first stage of the import, but will be deleted during the second if not also specified in `final-schema.json`.
 
 When importing into the corresponding collection, these base properties will always be imported:
 * for document collections, `_key` - equivalent to SQL primary key
