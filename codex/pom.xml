@@ -8,7 +8,7 @@
         <version>2.7.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>org.example</groupId>
+    <groupId>org.project</groupId>
     <artifactId>codex</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>codex</name>
@@ -48,11 +48,6 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>4.10.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>5.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
