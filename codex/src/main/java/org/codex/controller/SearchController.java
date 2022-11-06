@@ -8,7 +8,6 @@ import org.codex.forms.RegexForm;
 import org.codex.forms.RelationForm;
 import org.codex.repository.QueryRepository;
 import org.codex.enums.LexemeForm;
-import org.example.codex.forms.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

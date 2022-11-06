@@ -66,8 +66,4 @@ public class SystemController {
         schema.setEdgeRelationMap(getEdgeRelationsAll());
         return schema;
     }
-    @GetMapping("hello")
-    public String helloWorld() {
-        return "Hello world!";
-    }
 }

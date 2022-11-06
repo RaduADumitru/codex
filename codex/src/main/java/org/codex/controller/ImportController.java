@@ -61,9 +61,7 @@ public class ImportController {
         this.repository = repository;
     }
 
-//    String baseRequestUrl = "http://localhost:8529/_db/dex/_api/";
-
-    //Test sending request to DB API; working
+    //Test sending request to DB API
     @GetMapping("version")
     ResponseEntity<String> getVersion() throws IOException {
         String credential = ImportUtil.getInstance().getCredentials();
@@ -679,38 +677,43 @@ public class ImportController {
                 if (finalSchemaCollections.contains("Lexeme")) {
                     documentCountCache.put("Lexeme", repository.getCollectionDocumentCount("Lexeme"));
 
-                    System.out.println("Adding meanings to lexemes:");
-                    if(pageCount == 0) {
-                        repository.insertMeanings();
-                    }
-                    else {
-                        // insert into generated edge collection with pagination
-                        Integer documentCount = documentCountCache.get("Lexeme");
-                        int pageSize = (documentCount / pageCount) + 1;
-                        int skip = 0;
-                        for(int i = 0; i < pageCount; i++) {
-                            System.out.println("Adding meanings to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
-                            repository.insertMeaningsWithPagination(skip, pageSize);
-                            skip += pageSize;
+                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("meanings")) {
+                        System.out.println("Adding meanings to lexemes:");
+                        if(pageCount == 0) {
+                            repository.insertMeanings();
+                        }
+                        else {
+                            // insert into generated edge collection with pagination
+                            Integer documentCount = documentCountCache.get("Lexeme");
+                            int pageSize = (documentCount / pageCount) + 1;
+                            int skip = 0;
+                            for(int i = 0; i < pageCount; i++) {
+                                System.out.println("Adding meanings to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                                repository.insertMeaningsWithPagination(skip, pageSize);
+                                skip += pageSize;
+                            }
                         }
                     }
 
-                    System.out.println("Adding usage examples to lexemes:");
-                    if(pageCount == 0) {
-                        repository.insertUsageExamples();
-                    }
-                    else {
-                        Integer documentCount = documentCountCache.get("Lexeme");
-                        int pageSize = (documentCount / pageCount) + 1;
-                        int skip = 0;
-                        for(int i = 0; i < pageCount; i++) {
-                            System.out.println("Adding usage examples to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
-                            repository.insertUsageExamplesWithPagination(skip, pageSize);
-                            skip += pageSize;
+                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("usageExamples")) {
+                        System.out.println("Adding usage examples to lexemes:");
+                        if(pageCount == 0) {
+                            repository.insertUsageExamples();
+                        }
+                        else {
+                            Integer documentCount = documentCountCache.get("Lexeme");
+                            int pageSize = (documentCount / pageCount) + 1;
+                            int skip = 0;
+                            for(int i = 0; i < pageCount; i++) {
+                                System.out.println("Adding usage examples to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                                repository.insertUsageExamplesWithPagination(skip, pageSize);
+                                skip += pageSize;
+                            }
                         }
                     }
 
-                    System.out.println("Adding etymologies to lexemes:");
+                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("etymologies")) {
+                        System.out.println("Adding etymologies to lexemes:");
                     if(pageCount == 0) {
                         repository.insertEtymologies();
                     }
@@ -718,14 +721,18 @@ public class ImportController {
                         Integer documentCount = documentCountCache.get("Lexeme");
                         int pageSize = (documentCount / pageCount) + 1;
                         int skip = 0;
-                        for(int i = 0; i < pageCount; i++) {
+                        for (int i = 0; i < pageCount; i++) {
                             System.out.println("Adding etymologies to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
                             repository.insertEtymologiesWithPagination(skip, pageSize);
                             skip += pageSize;
                         }
                     }
-                    System.out.println("Setting language:");
-                    repository.setRomanianLanguage();
+                    }
+                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("languages")) {
+                        // set languages; as of now only Romanian language
+                        System.out.println("Setting language:");
+                        repository.setRomanianLanguage();
+                    }
                 }
                 // Update Relation
                 System.out.println("Updating Relation: ");
@@ -785,10 +792,5 @@ public class ImportController {
                 throw e;
             }
         }
-    }
-
-    @PostMapping("count")
-    ResponseEntity<String> colCount(@org.springframework.web.bind.annotation.RequestBody CollectionCountForm collectionCountForm) {
-        return new ResponseEntity<>(repository.getCollectionDocumentCount(collectionCountForm.getCollection()).toString(), HttpStatus.OK);
     }
 }
