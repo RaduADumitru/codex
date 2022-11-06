@@ -474,7 +474,7 @@ filter l.@form == @word
 return l)
 for l in start_lexemes
 //words with given relationship are neighbors as described by Relation edge collection
-for v, e, p in 1..1 any l Relation
+for v, e, p in 1..1 outbound l Relation
     filter p.edges[0].type == @type
     return distinct p.vertices[1].@form
 """)

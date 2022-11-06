@@ -1,20 +1,20 @@
 package org.project.codex.forms;
 
 public class OptimizeImportForm {
-    private Integer pageCount;
+    private Integer pagecount;
 
-    public OptimizeImportForm(Integer pageCount) {
-        this.pageCount = pageCount;
+    public OptimizeImportForm(Integer pagecount) {
+        this.pagecount = pagecount;
     }
 
     public OptimizeImportForm() {
     }
 
-    public Integer getPageCount() {
-        return pageCount;
+    public Integer getPagecount() {
+        return pagecount;
     }
 
-    public void setPageCount(Integer pageCount) {
-        this.pageCount = pageCount;
+    public void setPagecount(Integer pagecount) {
+        this.pagecount = pagecount;
     }
 }

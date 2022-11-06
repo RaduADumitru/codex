@@ -35,6 +35,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 
@@ -54,7 +55,7 @@ public class ImportController {
     private String arangoDbUser;
     @Value("${arangodb.password}")
     private String arangoDbPassword;
-    private volatile Boolean importing = false;
+    private AtomicBoolean importing = new AtomicBoolean(false);
     private final String downloadLink = "https://dexonline.ro/static/download/dex-database.sql.gz";
     public ImportController(QueryRepository repository) {
         this.repository = repository;
@@ -79,15 +80,15 @@ public class ImportController {
     @PostMapping("import")
     ResponseEntity<String> databaseImport(@org.springframework.web.bind.annotation.RequestBody ImportForm importForm) throws IOException, JSQLParserException, ImportException {
         boolean completeImport = importForm.isComplete();
-        Integer pageCount = importForm.getPageCount();
+        Integer pageCount = importForm.getPagecount();
         if(pageCount < 0) {
             throw new IllegalArgumentException("Page count must be a positive integer!");
         }
-        if(importing) {
+        if(importing.get()) {
             throw new ImportException("Import already in progress!");
         }
         else {
-            importing = true;
+            importing.compareAndSet(false, true);
             try {
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
@@ -571,7 +572,7 @@ public class ImportController {
                     }
                 }
                 System.out.println("Generated edge collections created!");
-                importing = false;
+                importing.compareAndSet(true, false);
                 if(completeImport) {
                     optimizePartialImport(new OptimizeImportForm(pageCount));
                 }
@@ -579,25 +580,25 @@ public class ImportController {
             catch(Exception e) {
                 //delete database content on errors
                 ImportUtil.deleteCollections(repository.getCollections());
-                importing = false;
+                importing.compareAndSet(true, false);
                 throw e;
             }
-            importing = false;
+            importing.compareAndSet(true, false);
             System.out.println("Import complete!");
             return new ResponseEntity<>("Import complete", HttpStatus.OK);
         }
     }
     @PostMapping("optimize")
     ResponseEntity<String> optimizePartialImport(@org.springframework.web.bind.annotation.RequestBody OptimizeImportForm optimizeImportForm) throws ImportException, IOException {
-        Integer pageCount = optimizeImportForm.getPageCount();
+        Integer pageCount = optimizeImportForm.getPagecount();
         if(pageCount < 0) {
             throw new IllegalArgumentException("Page count must be a positive integer!");
         }
-        if(importing) {
+        if(importing.get()) {
             throw new ImportException("Import already in progress!");
         }
         else {
-            importing = true;
+            importing.compareAndSet(false, true);
             try {
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
@@ -794,7 +795,7 @@ public class ImportController {
             }
             catch(Exception e) {
                 ImportUtil.deleteCollections(repository.getCollections());
-                importing = false;
+                importing.compareAndSet(true, false);
                 throw e;
             }
         }

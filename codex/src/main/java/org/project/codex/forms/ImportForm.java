@@ -2,11 +2,11 @@ package org.project.codex.forms;
 
 public class ImportForm {
     private boolean complete;
-    private Integer pageCount;
+    private Integer pagecount;
 
-    public ImportForm(boolean complete, Integer pageCount) {
+    public ImportForm(boolean complete, Integer pagecount) {
         this.complete = complete;
-        this.pageCount = pageCount;
+        this.pagecount = pagecount;
     }
 
     public ImportForm() {
@@ -20,11 +20,11 @@ public class ImportForm {
         this.complete = complete;
     }
 
-    public Integer getPageCount() {
-        return pageCount;
+    public Integer getPagecount() {
+        return pagecount;
     }
 
-    public void setPageCount(Integer pageCount) {
-        this.pageCount = pageCount;
+    public void setPagecount(Integer pagecount) {
+        this.pagecount = pagecount;
     }
 }

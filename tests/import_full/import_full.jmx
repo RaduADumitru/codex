@@ -33,7 +33,7 @@
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
                 <stringProp name="Argument.value">{&#xd;
-	&quot;complete&quot;: false,&#xd;
+	&quot;complete&quot;: true,&#xd;
 	&quot;pageCount&quot;: ${__P(pagecount,0)}&#xd;
 }</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
