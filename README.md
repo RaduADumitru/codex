@@ -126,7 +126,7 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 ## Search Endpoints
 After importing the database in one of its two stages, the following endpoints can be used for searches.
 
-Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent: for example TODO ), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`). 
+Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent: for example `abager'ie` vs. `abagerie` ), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`). 
 
 Some endpoints are functional only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
 ### Endpoints only for initial import
@@ -186,10 +186,13 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 * `codex/import/version`: GET - returns ArangoDB database version
 
 ### Performance tests
-The folder `tests` contains a number of Jmeter performance / load tests. 
+The folder `tests` contains a number of Jmeter performance / load tests. Many also have `not_null` and `null` versions, which perform requests returning only non null values, and null values respectively.
+
 Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively (default value is 1 for each).
+
 Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a ramp-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
 
+Be advised that tests for non-optimized `meanings`, `etymologies`, `usageexamples`, `synonyms`, `antonyms`, `diminutives` and `augmentatives` call endpoints only working for the first stage of import, while `optimized` versions work only for the second. In this manner, performance between the two can be compared.
 To start one of the tests, run the following command:
 
 `sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
@@ -203,5 +206,3 @@ This will store an HTML summary of the test results in `tests/html/{testname}`, 
 * Searches for diminutives or augmentatives are not heavily supported; very few of these relationships exist in the original SQL database. The main focus for relation searches is on synonyms, and to a lesser extent antonyms.
 * Most lexemes in common use contain meanings extracted from their definitions, for easier presentation in a tree format; some in lesser use do not have meanings extracted separately, but they do have definitions, presented in the website and stored in the SQL table `Definition`
 * For some lesser used lexemes, DEXonline redirects to content of a more used version (for example Rosa -> trandafir), whose usage examples and etymologies may not always contain/describe the same word, but another form or synonym of it
-## TODO:
-* performance tests
