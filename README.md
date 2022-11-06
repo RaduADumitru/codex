@@ -1,16 +1,30 @@
 # codex
-This Web API allows for migrating the database of DEXonline (website which serves as an online Romanian dictionary: https://dexonline.ro), through SQL parsing of a remote initialization script (hosted at https://dexonline.ro/static/download/dex-database.sql.gz) into an ArangoDB graph database. Additionally, through the API, a number of searches can be performed inside the dictionary.
+This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro), through SQL parsing of a remote initialization [script](https://dexonline.ro/static/download/dex-database.sql.gz) into an ArangoDB graph database. Additionally, through the API, a number of searches can be performed inside the dictionary.
 
 For startup, you can use the corresponding Docker Compose service. For example: `sudo docker compose build`, then `sudo docker compose up`.
 ## Import
 The import can be achieved in two phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the structure of the database in their respective stages, for specification and validation purposes. The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
-These documents contain three root fields: `collections`, containing descriptions of document collections (analogous to SQL tables), `edgeCollections`, which describe relationships between documents in collections (similar to many-to-many SQL tables), and `generatedEdgeCollections` (edge collections generated automatically, meant to simulate SQL one-to-many relationships, and built using attributes of the "child" collection `attributeCollection`). Only the collections specified inside these fields will be imported.
+For each of these import phases, specified tables and attributes present in the SQL script will be imported (SQL database documentation is available [here](https://github.com/dexonline/dexonline/wiki/Database-Schema)).
 
-Each document collection and edge collection is mapped to an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated. When importing into the corresponding collection, only the specified properties (SQL columns) of a document will be imported, besides base properties (`_key` (primary key) for document collections, and `_from`, `_to` (equivalent to foreign keys of many-to-many tables) for edge collections). ArangoDB data types of document fields will be predetermined based on their corresponding SQL column data type.
+The schema documents contain root fields describing three types of collections: 
+* `collections`, containing descriptions of document collections (analogous to SQL tables)
+* `edgeCollections`, which describe relationships between documents in collections (similar to many-to-many SQL tables)
+* `generatedEdgeCollections`: edge collections generated automatically, meant to simulate SQL one-to-many relationships, and built using attributes of the "child" collection `attributeCollection`. These generated collections are only usable in the first phase of the import, to be used during the second phase and then deleted after import is finished. 
+
+Only the collections and attributes specified inside these fields will be imported. Collections and attributes can be specified only in the original import schema (in which case they will be used during the optimization phase, and then deleted), or specified in both schema files, in which case they will be preserved after optimization.
+
+Inside the schema specification files, each document collection and edge collection is mapped to an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated. When importing into the corresponding collection, only the specified properties (SQL columns) of a document will be imported, besides base properties (`_key` (primary key) for document collections, and `_from`, `_to` (equivalent to foreign keys of many-to-many tables) for edge collections). ArangoDB data types of document fields will be predetermined based on their corresponding SQL column data type.
+
+Edge collections contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship.
+
+Generated edge collections, meant to represent one-to-many relationships, will be automatically generated after all other collections and edge collections are imported. They contain three fields: `attributeCollection` represents the child collection whose attributes will be used to generate edges, and `from` and `to` represent objects containing two fields: `collection` and `attribute`, describing collections with the given relationship, and respectively the attribute inside `attributeCollection` which represents their SQL primary key / foreign key.
+
+It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
 To avoid idle timeouts resulting from excessively large transactions, the import can be paginated, so that certain large queries will be split into smaller ones, leading to increased stability.
 
+### How to import
 To import the database into ArangoDB, use the following endpoint:
 * `codex/import/import`: POST - parameters `boolean complete` (whether to execute second phase of import, or only the first), `integer pageCount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
 
@@ -23,7 +37,7 @@ Endpoints for searches have a number of similar fields: `wordform` represents th
 * `codex/search/levenshtein`: POST - parameters `String word`, `Integer distance`, `String wordform` - returns array of words with a Levenshtein distance of maximum `dist` from `word`, using the specified `wordform`
 * `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` using specified `wordform`
 * `codex/knn/editdistance`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `levenshtein`, `hamming` or `lcs_distance`), `Integer neighborcount` - returns array of strings representing K nearest neighbors using given `distancetype`
-* `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` or `ngram_positional_similarity`), `String neighborcount`, `String ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
+* `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` (described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_similarity)) or `ngram_positional_similarity` (described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_positional_similarity))), `String neighborcount`, `String ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
 ### Endpoints only for optimized import
 * `codex/optimizedsearch/meanings`: POST - parameters `String word`, `String wordform` - returns array of strings representing meanings of `word`
 * `codex/optimizedsearch/etymologies`: POST - parameters `String word`, `String wordform` - returns array of objects representing etymologies of `word`. These objects represent pairings of the etymology's original word, and a tag describing its origin (language), both represented as strings.
@@ -45,7 +59,7 @@ Endpoints for searches have a number of similar fields: `wordform` represents th
 ### Performance tests
 The folder `tests` contains a number of Jmeter performance / load tests. 
 Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively (default value is 1 for each).
-Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a start-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
+Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a ramp-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
 
 To start one of the tests, run the following command:
 
@@ -56,6 +70,7 @@ where `testname` is the name of the test's directory.
 This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
 
 ### Known issues/limitations
-* `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by setting the server option `--transaction.streaming-idle-timeout` to the maximum of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split large transactions into smaller ones, such as by increasing the `pageCount` when importing.
+* `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by having the server option `--transaction.streaming-idle-timeout` set to the maximum possible value of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split large transactions into smaller ones, such as by increasing the `pageCount` when importing.
+* Searches for diminutives or augmentatives are not heavily supported; very few of these relationships exist in the original SQL database. The main focus for relation searches is on synonyms, and to a lesser extent antonyms.
 ## TODO:
 * performance tests
