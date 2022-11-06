@@ -97,7 +97,7 @@ Inside the schema specification files, each document collection and edge collect
 
 Only the collections and attributes specified inside these fields will be imported. Collections and attributes can be specified only in the original import schema (in which case they will be used during the optimization phase, and then deleted), or specified in both schema files, in which case they will be preserved after optimization.
 
-For example, the SQL database contains the table `Definition` (described in the documentation [here](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Definition-table)). To add it to the import along with the attribute `internalRep` (the definition's text) and the attribute `status` (numeric code of 0, 1, 2, or 3) present as an SQL column, add the following to the `collections` of `import-schema.json`:
+For example, the SQL database contains the table `Definition` (described in the documentation [here](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Definition-table)). To add it to the import along with the attribute `internalRep` (the definition's text) and the attribute `status` (numeric code of 0, 1, 2, or 3) both of which are defined as SQL columns inside the documentation, add the following to the `collections` of `import-schema.json`:
 ~~~json
 "Definition": {
       "rule": {
