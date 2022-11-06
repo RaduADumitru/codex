@@ -33,10 +33,10 @@ To avoid idle timeouts resulting from excessively large transactions, the import
 
 ### How to import
 To import the database into ArangoDB, use the following endpoint:
-* `codex/import/import`: POST - parameters `boolean complete` (whether to execute second phase of import, or only the first), `integer pageCount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
+* `codex/import/import`: POST - parameters `boolean complete` (whether to execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
 
 A partial import (at only the first stage) can also be led into the second using the endpoint:
-* `codex/import/optimize`: POST - parameter `integer pageCount` - returns the string `Import complete` on a success
+* `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success
 
 ## Search Endpoints
 Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`)
@@ -77,7 +77,7 @@ where `testname` is the name of the test's directory.
 This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
 
 ### Known issues/limitations
-* `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by having the server option `--transaction.streaming-idle-timeout` set to the maximum possible value of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split any large transactions into smaller ones, such as by increasing the `pageCount` when importing.
+* `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by having the server option `--transaction.streaming-idle-timeout` set to the maximum possible value of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split any large transactions into smaller ones, such as by increasing the `pagecount` when importing.
 * Searches for diminutives or augmentatives are not heavily supported; very few of these relationships exist in the original SQL database. The main focus for relation searches is on synonyms, and to a lesser extent antonyms.
 * Most lexemes in common use contain meanings extracted from their definitions, for easier presentation in a tree format; some in lesser use do not have meanings extracted separately, but they do have definitions, presented in the website and stored in the SQL table `Definition`
 * For some lesser used lexemes, DEXonline redirects to content of a more used version (for example Rosa -> trandafir), whose usage examples and etymologies may not always contain/describe the same word, but another form or synonym of it
