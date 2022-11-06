@@ -54,7 +54,7 @@ public class ImportController {
     private String arangoDbUser;
     @Value("${arangodb.password}")
     private String arangoDbPassword;
-    private Boolean importing = false;
+    private volatile Boolean importing = false;
     private final String downloadLink = "https://dexonline.ro/static/download/dex-database.sql.gz";
     public ImportController(QueryRepository repository) {
         this.repository = repository;
