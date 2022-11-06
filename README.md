@@ -1,5 +1,5 @@
 # codex
-This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro) into an ArangoDB graph database, while allowing for a number of searches to be performed.
+This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro) into an ArangoDB graph database, with a number of searches able to be performed.
 
 For startup, you can use the corresponding Docker Compose service. For example: 
 ~~~bash
@@ -217,16 +217,12 @@ Number of threads, rampup time and number of loops can be specified through the 
 Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a ramp-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
 
 Be advised that tests for non-optimized `meanings`, `etymologies`, `usageexamples`, `synonyms`, `antonyms`, `diminutives` and `augmentatives` call endpoints only working for the first stage of import, while `optimized` versions work only for the second. In this manner, performance between the two can be compared.
-To start one of the tests, run the following command:
 
-`sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
-where `testname` is the name of the test's directory.
-
-For example:
+To start one of the tests, use the following one liner inside the repo root directory (detailed explanation [here](https://www.perfmatrix.com/jmeter-docker-test-executions/)):
 ~~~bash
 TEST=knn_levenshtein && TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads=1 -Jrampup=1 -Jloops=1 -n -t /workspace/${TEST}/${TEST}.jmx -l /workspace/logs/${TEST}.jtl -f -e -o /workspace/html/${TEST}
 ~~~
-Set the value of TEST to the desired test directory name, and other -J flags accordingly. Some tests also have additional optional command line parameters:
+Change the value of TEST to the desired test directory name, and set command line arguments starting with -J accordingly. Some tests also have additional optional command line parameters:
 
 * for import tests, `-Jpagecount` for the number of pages (default 0 - no pagination), 
 * for KNN tests, `-Jneighborcount` for the number of neighbors (default 5),
