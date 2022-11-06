@@ -128,7 +128,9 @@ After importing the database in one of its two stages, the following endpoints c
 
 Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent: for example `abager'ie` vs. `abagerie` ), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`). 
 
-Some endpoints are functional only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
+All searches are case sensitive and diacritics-sensitive.
+
+Some endpoints function only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
 ### Endpoints only for initial import
 * `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
 ~~~bash
@@ -202,7 +204,11 @@ For example:
 ~~~bash
 TEST=knn_levenshtein && TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads=1 -Jrampup=1 -Jloops=1 -n -t /workspace/${TEST}/${TEST}.jmx -l /workspace/logs/${TEST}.jtl -f -e -o /workspace/html/${TEST}
 ~~~
-Set the value of TEST to the desired test directory name, and other -J flags accordingly.
+Set the value of TEST to the desired test directory name, and other -J flags accordingly. Some tests also have additional optional command line parameters:
+
+* for import tests, `-Jpagecount` for the number of pages (default 0 - no pagination), 
+* for KNN tests, `-Jneighborcount` for the number of neighbors (default 5),
+* for N-gram tests, `-Jngramsize` for the n-gram size (default 2)
 
 This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
 
