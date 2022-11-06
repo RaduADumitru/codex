@@ -21,7 +21,8 @@ By default, the service runs on localhost port 8080, with the database on port 8
 ## Import
 
 Data will be imported from the DEXonline's database initialization script (accesible (here)[https://dexonline.ro/static/download/dex-database.sql.gz]).
-The import can be achieved in two phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the structure of the database in their respective stages, for specification and validation purposes. 
+
+The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the structure of the database in their respective stages, for specification and validation purposes. 
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
@@ -62,7 +63,7 @@ The schema documents contain root fields describing three types of collections:
     }
 ~~~
 * `edgeCollections`, which describe relationships between documents in collections (similar to many-to-many SQL tables). 
-Edge collection objects contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship.An example for the predefined collection `EntryLexeme`, describing a relationship between entries and lexemes:
+Edge collection objects contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship. An example for the predefined collection `EntryLexeme`, describing a relationship between entries and lexemes:
 ~~~json
 "EntryLexeme":{
       "schema":{
@@ -114,7 +115,7 @@ For example, the SQL database contains the table `Definition` (described in the 
       "message": "Definition could not be inserted!"
     }
 ~~~
-The level `strict` will stop the import if any imported documents do not respect this schema (if `internalRep` is not a string, or if `status` is not an integer with a value of 0, 1, 2 or 3). This collection will be imported during the first stage of the import, but will be deleted during the second if not also specified in `final-schema.json`.
+The level `strict` will stop the import if any imported documents do not respect this schema (if `internalRep` is not a string, or if `status` is not an integer with a value of 0, 1, 2 or 3), throwing the error message `message` on errors. This collection will be imported during the first stage of the import, but will be deleted during the second if not also specified in `final-schema.json`.
 
 When importing into the corresponding collection, these base properties will always be imported:
 * for document collections, `_key` - equivalent to SQL primary key
