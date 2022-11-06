@@ -672,91 +672,97 @@ public class ImportController {
                     ImportUtil.setSchema(finalEdgeCollection, schemaJsonString);
                 }
                 HashMap<String, Integer> documentCountCache = new HashMap<>();
-                // Update Lexemes
-                if (finalSchemaCollections.contains("Lexeme")) {
-                    documentCountCache.put("Lexeme", repository.getCollectionDocumentCount("Lexeme"));
-
-                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("meanings")) {
-                        //Required collections:
-                        System.out.println("Adding meanings to lexemes:");
-                        if(pageCount == 0) {
-                            repository.insertMeanings();
-                        }
-                        else {
-                            // insert into generated edge collection with pagination
-                            Integer documentCount = documentCountCache.get("Lexeme");
-                            int pageSize = (documentCount / pageCount) + 1;
-                            int skip = 0;
-                            for(int i = 0; i < pageCount; i++) {
-                                System.out.println("Adding meanings to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
-                                repository.insertMeaningsWithPagination(skip, pageSize);
-                                skip += pageSize;
-                            }
-                        }
-                    }
-
-                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("usageExamples")) {
-                        System.out.println("Adding usage examples to lexemes:");
-                        if(pageCount == 0) {
-                            repository.insertUsageExamples();
-                        }
-                        else {
-                            Integer documentCount = documentCountCache.get("Lexeme");
-                            int pageSize = (documentCount / pageCount) + 1;
-                            int skip = 0;
-                            for(int i = 0; i < pageCount; i++) {
-                                System.out.println("Adding usage examples to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
-                                repository.insertUsageExamplesWithPagination(skip, pageSize);
-                                skip += pageSize;
-                            }
-                        }
-                    }
-
-                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("etymologies")) {
-                        System.out.println("Adding etymologies to lexemes:");
-                    if(pageCount == 0) {
-                        repository.insertEtymologies();
-                    }
-                    else {
-                        Integer documentCount = documentCountCache.get("Lexeme");
-                        int pageSize = (documentCount / pageCount) + 1;
-                        int skip = 0;
-                        for (int i = 0; i < pageCount; i++) {
-                            System.out.println("Adding etymologies to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
-                            repository.insertEtymologiesWithPagination(skip, pageSize);
-                            skip += pageSize;
-                        }
-                    }
-                    }
-                    if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("languages")) {
-                        // set languages; as of now only Romanian language
-                        System.out.println("Setting language:");
-                        repository.setRomanianLanguage();
-                    }
+                if(!(importSchemaCollections.contains("Lexeme") && importSchemaCollections.contains("Entry") && importSchemaCollections.contains("Tree") && importSchemaCollections.contains("Meaning") && importSchemaEdgeCollections.contains("TreeEntry") && importSchemaEdgeCollections.contains("EntryLexeme") && importSchemaGeneratedEdgeCollections.contains("MeaningMeaning") && importSchemaGeneratedEdgeCollections.contains("MeaningTree"))) {
+                    System.out.println("Skipping optimization: required collections are document collections Entry, Tree, Meaning, edge collections TreeEntry, EntryLexeme, generated edge collections MeaningMeaning, MeaningTree");
                 }
-                // Update Relation
-                System.out.println("Updating Relation: ");
-                if (finalSchemaEdgeCollections.contains("Relation")) {
-                    ImportUtil.createCollection("RelationTemp", true, finalSchema.get("edgeCollections").get("Relation").get("schema").toString());
-                    System.out.println("Updating Relation collection:");
-                    if(pageCount == 0) {
-                        repository.createRelationTemp();
-                    }
-                    else {
-                        documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
-                        Integer documentCount = documentCountCache.get("Relation");
-                        int pageSize = (documentCount / pageCount) + 1;
-                        int skip = 0;
-                        for(int i = 0; i < pageCount; i++) {
-                            System.out.println("Updating Relation collection (page " + (i + 1) + "/" + pageCount + ")");
-                            repository.createRelationTempWithPagination(skip, pageSize);
-                            skip += pageSize;
+                else {
+                    // Update Lexemes
+                    if (finalSchemaCollections.contains("Lexeme")) {
+                        documentCountCache.put("Lexeme", repository.getCollectionDocumentCount("Lexeme"));
+                        //Required collections: document collections Entry, Tree, Meaning, edge collections TreeEntry, EntryLexeme, generated edge collections MeaningMeaning, MeaningTree
+
+                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("meanings")) {
+
+                            System.out.println("Adding meanings to lexemes:");
+                            if(pageCount == 0) {
+                                repository.insertMeanings();
+                            }
+                            else {
+                                // insert into generated edge collection with pagination
+                                Integer documentCount = documentCountCache.get("Lexeme");
+                                int pageSize = (documentCount / pageCount) + 1;
+                                int skip = 0;
+                                for(int i = 0; i < pageCount; i++) {
+                                    System.out.println("Adding meanings to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                                    repository.insertMeaningsWithPagination(skip, pageSize);
+                                    skip += pageSize;
+                                }
+                            }
+                        }
+
+                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("usageExamples")) {
+                            System.out.println("Adding usage examples to lexemes:");
+                            if(pageCount == 0) {
+                                repository.insertUsageExamples();
+                            }
+                            else {
+                                Integer documentCount = documentCountCache.get("Lexeme");
+                                int pageSize = (documentCount / pageCount) + 1;
+                                int skip = 0;
+                                for(int i = 0; i < pageCount; i++) {
+                                    System.out.println("Adding usage examples to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                                    repository.insertUsageExamplesWithPagination(skip, pageSize);
+                                    skip += pageSize;
+                                }
+                            }
+                        }
+
+                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("etymologies")) {
+                            System.out.println("Adding etymologies to lexemes:");
+                            if(pageCount == 0) {
+                                repository.insertEtymologies();
+                            }
+                            else {
+                                Integer documentCount = documentCountCache.get("Lexeme");
+                                int pageSize = (documentCount / pageCount) + 1;
+                                int skip = 0;
+                                for (int i = 0; i < pageCount; i++) {
+                                    System.out.println("Adding etymologies to Lexemes (page " + (i + 1) + "/" + pageCount + ")");
+                                    repository.insertEtymologiesWithPagination(skip, pageSize);
+                                    skip += pageSize;
+                                }
+                            }
+                        }
+                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("languages")) {
+                            // set languages; as of now only Romanian language
+                            System.out.println("Setting language:");
+                            repository.setRomanianLanguage();
                         }
                     }
-                    //Replace Relation with newly built collection
-                    ImportUtil.deleteCollection("Relation");
-                    ImportUtil.renameCollection("RelationTemp", "Relation");
-                    documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
+                    if (finalSchemaEdgeCollections.contains("Relation") && importSchemaEdgeCollections.contains("Relation")) {
+                        // Update Relation
+                        System.out.println("Updating Relation: ");
+                        ImportUtil.createCollection("RelationTemp", true, finalSchema.get("edgeCollections").get("Relation").get("schema").toString());
+                        System.out.println("Updating Relation collection:");
+                        if(pageCount == 0) {
+                            repository.createRelationTemp();
+                        }
+                        else {
+                            documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
+                            Integer documentCount = documentCountCache.get("Relation");
+                            int pageSize = (documentCount / pageCount) + 1;
+                            int skip = 0;
+                            for(int i = 0; i < pageCount; i++) {
+                                System.out.println("Updating Relation collection (page " + (i + 1) + "/" + pageCount + ")");
+                                repository.createRelationTempWithPagination(skip, pageSize);
+                                skip += pageSize;
+                            }
+                        }
+                        //Replace Relation with newly built collection
+                        ImportUtil.deleteCollection("Relation");
+                        ImportUtil.renameCollection("RelationTemp", "Relation");
+                        documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
+                    }
                 }
                 //Remove collections not in final schema
                 System.out.println("Removing collections not in final schema:");
