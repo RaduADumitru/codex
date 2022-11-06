@@ -196,8 +196,13 @@ Be advised that tests for non-optimized `meanings`, `etymologies`, `usageexample
 To start one of the tests, run the following command:
 
 `sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
-
 where `testname` is the name of the test's directory.
+
+For example:
+~~~bash
+TEST=knn_levenshtein && TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads=1 -Jrampup=1 -Jloops=1 -n -t /workspace/${TEST}/${TEST}.jmx -l /workspace/logs/${TEST}.jtl -f -e -o /workspace/html/${TEST}
+~~~
+Set the value of TEST to the desired test directory name, and other -J flags accordingly.
 
 This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
 
