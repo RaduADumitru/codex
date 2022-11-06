@@ -14,9 +14,16 @@ The schema documents contain root fields describing three types of collections:
 
 Only the collections and attributes specified inside these fields will be imported. Collections and attributes can be specified only in the original import schema (in which case they will be used during the optimization phase, and then deleted), or specified in both schema files, in which case they will be preserved after optimization.
 
-Inside the schema specification files, each document collection and edge collection is mapped to an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated. When importing into the corresponding collection, only the specified properties (SQL columns) of a document will be imported, besides base properties (`_key` (primary key) for document collections, and `_from`, `_to` (equivalent to foreign keys of many-to-many tables) for edge collections). ArangoDB data types of document fields will be predetermined based on their corresponding SQL column data type.
+Inside the schema specification files, each document collection and edge collection is mapped to an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated. 
 
-Edge collections contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship.
+When importing into the corresponding collection, these base properties will always be imported:
+* for document collections, `_key` - equivalent to SQL primary key
+* for edge collections and generated edge collections, `_from` and `_to`, equivalent to foreign keys of many-to-many SQL tables
+Thus, all many-to-many tables in the SQL schema should be imported as edge collections, while other tables as document collections. JSONschema validation does not work for these base properties, so they should not be specified inside the JSONschema object.
+
+Other than these, only the specified properties (SQL columns) of a document will be imported. ArangoDB data types of document fields will be predetermined based on their corresponding SQL column data type.
+
+Edge collection objects contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship.
 
 Generated edge collections, meant to represent one-to-many relationships, will be automatically generated after all other collections and edge collections are imported. They contain three fields: `attributeCollection` represents the child collection whose attributes will be used to generate edges, and `from` and `to` represent objects containing two fields: `collection` and `attribute`, describing collections with the given relationship, and respectively the attribute inside `attributeCollection` which represents their SQL primary key / foreign key.
 
