@@ -135,6 +135,7 @@
     "ObjectTag": {
       "schema": {
         "rule": {
+          "description": "Relationship between an object and its given tag. From collection is dynamically set based on objectType.",
           "properties": {
             "objectType": {
               "description": "Object with given tag: 1 - definition, 2 - lexeme, 3 - meaning, 4 - source, 5 - definitionVersion, 6 - entry, 7 - tree",
