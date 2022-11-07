@@ -123,6 +123,8 @@ For example, the SQL database contains the table `Definition` (described in the 
 ~~~
 The level `strict` will stop the import if any imported documents do not respect this schema (if `internalRep` is not a string, or if `status` is not an integer with a value of 0, 1, 2 or 3), throwing the error message `message` on errors. This collection will be imported during the first stage of the import, but will be deleted during the second if not also specified in `final-schema.json`.
 
+Any changes in import schema files will only be reflected inside the docker compose service if it is rebuilt, such as with `sudo docker compose build`!
+
 When importing into the corresponding collection, these base properties will always be imported:
 * for document collections, `_key` - equivalent to SQL primary key
 * for edge collections and generated edge collections, `_from` and `_to`, equivalent to foreign keys of many-to-many SQL tables
