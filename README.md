@@ -321,6 +321,8 @@ Available tests are as follows:
         * knn_hamming
         * knn_lcs
         * knn_levenshtein
+        * knn_ngram_similarity
+        * knn_ngram_positional_similarity
 
 To start one of the tests, use the following two commands inside the repo root directory (detailed explanation [here](https://www.perfmatrix.com/jmeter-docker-test-executions/)):
 ~~~bash
