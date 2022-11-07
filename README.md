@@ -20,18 +20,18 @@ sudo docker compose down
 By default, the service runs on localhost port 8080, with the database on port 8529. The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
-Data will be imported from the DEXonline's database initialization script (accesible (here)[https://dexonline.ro/static/download/dex-database.sql.gz]) through SQL parsing.
+Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
-The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the structure of the database in their respective stages, for specification and validation purposes. 
+The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each.
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
-As of now, during the second phase, a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection Relation will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
+As of now, the second phase is centered around data of lexemes (essentially words, with homonyms having separate lexemes each). The [Lexeme](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table) collection will be updated so that a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection [Relation](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Relation-table) will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
 
 For each of these import phases, specified tables and attributes present in the SQL script will be imported. To understand the original SQL database's structure, find its documentation [here](https://github.com/dexonline/dexonline/wiki/Database-Schema).
 
 The schema documents contain root fields describing three types of collections: 
-* `collections`, containing descriptions of document collections (analogous to SQL tables). An example of the predefined schema of the `Meaning` collection:
+* `collections`, containing descriptions of document collections (analogous to SQL tables). An example of the predefined schema of the [Meaning](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Meaning-table) collection:
 ~~~json
     "Meaning":{
       "rule":{
@@ -129,6 +129,8 @@ Other than these, only the specified properties (SQL columns) of a document will
 
 It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
+Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt.
+
 To avoid idle timeouts resulting from excessively large transactions, the import can be paginated, so that certain large queries will be split into smaller ones, leading to increased stability.
 
 ### How to import
@@ -137,13 +139,13 @@ To import the database into ArangoDB, use the following endpoint:
 
 An example using curl:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": true, "pageCount": 10}' -X POST "localhost:8080/codex/import/import"
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": true, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
 ~~~
 
 A partial import (at only the first stage) can also be led into the second using the endpoint:
 * `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pageCount": 10}' -X POST "localhost:8080/codex/import/optimize"
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
 ~~~
 ## Search Endpoints
 After importing the database in one of its two stages, the following endpoints can be used for searches.
