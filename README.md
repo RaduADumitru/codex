@@ -58,7 +58,7 @@ To visualise from inside the database web interface:
 
 * Go to `Graphs` and select `LexemeRelationGraph`
 * click on the top right `≡` button
-* Recommended to set Nodes attribute to `formNoAccent` and Edges attribute to `type` in the settings on the right
+* Recommended to set Nodes Label to `formNoAccent` and Edges Label to `type` in the settings on the right
 * Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
 
 Result should look similar to this:
@@ -67,7 +67,6 @@ Result should look similar to this:
 Each stage has its own corresponding endpoints which can be called for searches (further described in [Search Endpoints](#search-endpoints)). For example, to get meanings of a word:
 * For initial import stage: `codex/search/meanings`
 * For optimized import stage: `codex/optimizedsearch/meanings`
-
 
 ## Search Endpoints
 After importing the database in one of its two stages, the following endpoints can be used for searches.
