@@ -253,4 +253,3 @@ This will store an HTML summary of the test results in `tests/html/{testname}`, 
 * Searches for diminutives or augmentatives are not heavily supported; very few of these relationships exist in the original SQL database. The main focus for relation searches is on synonyms, and to a lesser extent antonyms.
 * Most lexemes in common use contain meanings extracted from their definitions, for easier presentation in a tree format; some in lesser use do not have meanings extracted separately, but they do have definitions, presented in the website and stored in the SQL table `Definition`
 * For some lesser used lexemes, DEXonline redirects to content of a more used version (for example Rosa -> trandafir), whose usage examples and etymologies may not always contain/describe the same word, but another form or synonym of it
-* Jmeter cannot process the letter `â` in request data; all test datasets should contain only words without this letter
