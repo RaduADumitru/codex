@@ -147,6 +147,21 @@ A partial import (at only the first stage) can also be led into the second using
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
 ~~~
+
+### Visualisation
+On an **optimized** import, a graph depicting lexemes and their relations will be automatically generated for visualization.
+
+To visualise:
+
+* Access the database (default localhost:8529) in a web browser
+* login (default username `root`, password `openSesame`)
+* access the database `dex`
+* Go to `Graphs` and select `LexemeRelationGraph`
+* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type`
+* Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/1200`)
+
+Result should look similar to this:
+![screenshot](images/galben_graph.png)
 ## Search Endpoints
 After importing the database in one of its two stages, the following endpoints can be used for searches.
 
