@@ -116,7 +116,7 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 #### KNN Endpoints
 * `codex/knn/editdistance`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `levenshtein`, `hamming` or `lcs_distance`), `Integer neighborcount` - returns array of strings representing K nearest neighbors using given `distancetype`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance"
 ~~~
 * `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_similarity)) or `ngram_positional_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_positional_similarity))), `Integer neighborcount`, `Integer ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
 ~~~bash
