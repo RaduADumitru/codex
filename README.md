@@ -1,5 +1,5 @@
 # codex
-This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro) into an ArangoDB graph database, while allowing for a number of searches to be performed.
+This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro) into an ArangoDB graph database, with a number of searches able to be performed.
 
 For startup, you can use the corresponding Docker Compose service. For example: 
 ~~~bash
@@ -20,17 +20,18 @@ sudo docker compose down
 By default, the service runs on localhost port 8080, with the database on port 8529. The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
-Data will be imported from the DEXonline's database initialization script (accesible (here)[https://dexonline.ro/static/download/dex-database.sql.gz]).
-The import can be achieved in two phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the structure of the database in their respective stages, for specification and validation purposes. 
+Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
+
+The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each.
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
-As of now, during the second phase, a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection Relation will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
+As of now, the second phase is centered around data of lexemes (essentially words, with homonyms having separate lexemes each). The [Lexeme](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table) collection will be updated so that a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection [Relation](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Relation-table) will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
 
 For each of these import phases, specified tables and attributes present in the SQL script will be imported. To understand the original SQL database's structure, find its documentation [here](https://github.com/dexonline/dexonline/wiki/Database-Schema).
 
 The schema documents contain root fields describing three types of collections: 
-* `collections`, containing descriptions of document collections (analogous to SQL tables). An example of the predefined schema of the `Meaning` collection:
+* `collections`, containing descriptions of document collections (analogous to SQL tables). An example of the predefined schema of the [Meaning](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Meaning-table) collection:
 ~~~json
     "Meaning":{
       "rule":{
@@ -62,7 +63,7 @@ The schema documents contain root fields describing three types of collections:
     }
 ~~~
 * `edgeCollections`, which describe relationships between documents in collections (similar to many-to-many SQL tables). 
-Edge collection objects contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship.An example for the predefined collection `EntryLexeme`, describing a relationship between entries and lexemes:
+Edge collection objects contain three fields: `schema` contains the aforementioned ArangoDB schema specification object, and `from` and `to` describe the collections with the given relationship. An example for the predefined collection `EntryLexeme`, describing a relationship between entries and lexemes:
 ~~~json
 "EntryLexeme":{
       "schema":{
@@ -92,8 +93,29 @@ Edge collection objects contain three fields: `schema` contains the aforemention
     },
 ~~~
 
-Inside the schema specification files, each document collection and edge collection contains an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated, throwing an error on any mismatches. 
+Inside the schema specification files, each document collection and edge collection contains an [ArangoDB Schema validation object](https://www.arangodb.com/docs/stable/data-modeling-documents-schema-validation.html) (at `collections.(name)` and `edgeCollections.(name).schema` respectively). Its `rule` property describes a [JSONschema object](https://json-schema.org/learn/getting-started-step-by-step.html) against which all documents imported into the collection will be validated, throwing an error on any mismatches.
+
 Only the collections and attributes specified inside these fields will be imported. Collections and attributes can be specified only in the original import schema (in which case they will be used during the optimization phase, and then deleted), or specified in both schema files, in which case they will be preserved after optimization.
+
+For example, the SQL database contains the table `Definition` (described in the documentation [here](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Definition-table)). To add it to the import along with the attribute `internalRep` (the definition's text) and the attribute `status` (numeric code of 0, 1, 2, or 3) both of which are defined as SQL columns inside the documentation, add the following to the `collections` of `import-schema.json`:
+~~~json
+"Definition": {
+      "rule": {
+        "properties": {
+          "internalRep": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2, 3]
+          }
+        }
+      },
+      "level": "strict",
+      "message": "Definition could not be inserted!"
+    }
+~~~
+The level `strict` will stop the import if any imported documents do not respect this schema (if `internalRep` is not a string, or if `status` is not an integer with a value of 0, 1, 2 or 3), throwing the error message `message` on errors. This collection will be imported during the first stage of the import, but will be deleted during the second if not also specified in `final-schema.json`.
 
 When importing into the corresponding collection, these base properties will always be imported:
 * for document collections, `_key` - equivalent to SQL primary key
@@ -107,6 +129,8 @@ Other than these, only the specified properties (SQL columns) of a document will
 
 It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
+Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt.
+
 To avoid idle timeouts resulting from excessively large transactions, the import can be paginated, so that certain large queries will be split into smaller ones, leading to increased stability.
 
 ### How to import
@@ -115,13 +139,13 @@ To import the database into ArangoDB, use the following endpoint:
 
 An example using curl:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": true, "pageCount": 10}' -X POST "localhost:8080/codex/import/import"
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": true, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
 ~~~
 
 A partial import (at only the first stage) can also be led into the second using the endpoint:
 * `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pageCount": 10}' -X POST "localhost:8080/codex/import/optimize"
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
 ~~~
 ## Search Endpoints
 After importing the database in one of its two stages, the following endpoints can be used for searches.
@@ -195,16 +219,12 @@ Number of threads, rampup time and number of loops can be specified through the 
 Ramp-up time represents the amount of time in seconds necessary for all testing threads to start: for example, for 5 threads and a ramp-up time of 10, a request will be sent every 10/5 = 2 seconds. This sequence will be executed an amount of times equal to the number of loops.
 
 Be advised that tests for non-optimized `meanings`, `etymologies`, `usageexamples`, `synonyms`, `antonyms`, `diminutives` and `augmentatives` call endpoints only working for the first stage of import, while `optimized` versions work only for the second. In this manner, performance between the two can be compared.
-To start one of the tests, run the following command:
 
-`sudo docker run -v {absolute path to 'tests' folder}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads={x} -Jrampup={x} -Jloops={x} -n -t /workspace/{testname}/{testname}.jmx -l /workspace/logs/{testname}.jtl -f -e -o /workspace/html/{testname}`
-where `testname` is the name of the test's directory.
-
-For example:
+To start one of the tests, use the following one liner inside the repo root directory (detailed explanation [here](https://www.perfmatrix.com/jmeter-docker-test-executions/)):
 ~~~bash
 TEST=knn_levenshtein && TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads=1 -Jrampup=1 -Jloops=1 -n -t /workspace/${TEST}/${TEST}.jmx -l /workspace/logs/${TEST}.jtl -f -e -o /workspace/html/${TEST}
 ~~~
-Set the value of TEST to the desired test directory name, and other -J flags accordingly. Some tests also have additional optional command line parameters:
+Change the value of TEST to the desired test directory name, and set command line arguments starting with -J accordingly. Some tests also have additional optional command line parameters:
 
 * for import tests, `-Jpagecount` for the number of pages (default 0 - no pagination), 
 * for KNN tests, `-Jneighborcount` for the number of neighbors (default 5),
