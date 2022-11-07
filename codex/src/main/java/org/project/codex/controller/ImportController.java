@@ -17,6 +17,7 @@ import org.project.codex.exceptions.ImportException;
 import org.project.codex.forms.OptimizeImportForm;
 import org.project.codex.repository.QueryRepository;
 import org.project.codex.util.ColumnData;
+import org.project.codex.util.EdgeDefinition;
 import org.project.codex.util.ImportUtil;
 import org.project.codex.enums.SqlDataType;
 import org.project.codex.forms.ImportForm;
@@ -90,6 +91,7 @@ public class ImportController {
         else {
             importing.compareAndSet(false, true);
             try {
+                ImportUtil.deleteGraph("LexemeRelationGraph");
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
                 ImportUtil.getInstance().setCredentials(Credentials.basic(arangoDbUser, arangoDbPassword));
@@ -790,6 +792,12 @@ public class ImportController {
                         }
                     }
                 }
+
+                //create graph with lexemes and relation, for visualisation
+                List<String> fromList = new ArrayList<>(List.of("Lexeme"));
+                List<String> toList = new ArrayList<>(List.of("Lexeme"));
+                EdgeDefinition edgeDefinition = new EdgeDefinition("Relation", fromList, toList);
+                ImportUtil.createGraph("LexemeRelationGraph", new ArrayList<>(List.of(edgeDefinition)));
                 System.out.println("Import optimization complete!");
                 return new ResponseEntity<>("Import optimization complete", HttpStatus.OK);
             }

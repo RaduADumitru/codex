@@ -1,7 +1,9 @@
 package org.project.codex.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.*;
 
@@ -145,5 +147,57 @@ public class ImportUtil {
         Response createResponse = call.execute();
         System.out.println("Renamed collection " + oldName + " into " + newName + ": " + Objects.requireNonNull(createResponse.body()).string());
         createResponse.close();
+    }
+
+    public static void createGraph(String name, List<EdgeDefinition> edgeDefinitions) throws IOException {
+        String createGraphURL = ImportUtil.getInstance().getBaseRequestUrl() + "gharial";
+        ObjectNode createGraphRequestObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
+        createGraphRequestObject.put("name", name);
+        ArrayNode edgeDefinitionArrayNode = createGraphRequestObject.putArray("edgeDefinitions");
+        for(EdgeDefinition edgeDefinition : edgeDefinitions) {
+            ObjectNode edgeDefinitionObjectNode = ImportUtil.getInstance().getObjectMapper().createObjectNode();
+            edgeDefinitionObjectNode.put("collection", edgeDefinition.getCollection());
+
+            ArrayNode edgeDefinitionFromArray = edgeDefinitionObjectNode.putArray("from");
+
+            for(String fromCollection : edgeDefinition.getFrom()) {
+                edgeDefinitionFromArray.add(fromCollection);
+            }
+
+            ArrayNode edgeDefinitionToArray = edgeDefinitionObjectNode.putArray("to");
+            for(String toCollection : edgeDefinition.getTo()) {
+                edgeDefinitionToArray.add(toCollection);
+            }
+
+            edgeDefinitionArrayNode.add(edgeDefinitionObjectNode);
+        }
+        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(createGraphRequestObject);
+        RequestBody createGraphRequestBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
+        Request setSchemaRequest = new Request.Builder()
+                .url(createGraphURL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .post(createGraphRequestBody)
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(setSchemaRequest);
+        Response createResponse = call.execute();
+        System.out.println("Created graph " + name + ": " + Objects.requireNonNull(createResponse.body()).string());
+        createResponse.close();
+    }
+
+    public static void deleteGraph(String name) throws IOException {
+        String deleteGraphURL = ImportUtil.getInstance().getBaseRequestUrl() + "gharial/" + name + "?dropCollections=false";
+        Request setSchemaRequest = new Request.Builder()
+                .url(deleteGraphURL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .delete()
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(setSchemaRequest);
+        Response deleteGraphResponse = call.execute();
+        Objects.requireNonNull(deleteGraphResponse);
+        deleteGraphResponse.close();
     }
 }
