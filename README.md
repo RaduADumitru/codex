@@ -34,7 +34,7 @@ To avoid idle timeouts resulting from excessively large transactions, the import
 To import the database into ArangoDB, use the following endpoint:
 * `codex/import/import`: POST - parameters `boolean complete` (whether to also execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
 
-An example using curl:
+An example using curl to import into the first stage:
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
 ~~~
