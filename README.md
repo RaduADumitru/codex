@@ -23,7 +23,7 @@ By default, the service runs on [localhost:8080](http:/localhost:8080), with the
 
 Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
-The import can be achieved in **two** phases, 
+The import can be achieved in **two** phases:
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
@@ -47,7 +47,7 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 
 To verify the results, you can enter the database's web interface:
 
-* Access the database (default [localhost:8529](localhost:8529)) in a web browser
+* Access the database (default [localhost:8529](http:/localhost:8529)) in a web browser
 * login (default username `root`, password `openSesame`)
 * access the database `dex`
 
