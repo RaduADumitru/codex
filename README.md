@@ -158,8 +158,8 @@ To visualise:
 * login (default username `root`, password `openSesame`)
 * access the database `dex`
 * Go to `Graphs` and select `LexemeRelationGraph`
-* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type`
-* Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/1200`)
+* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type` in the settings on the right
+* Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
 
 Result should look similar to this:
 ![screenshot](images/graph_example.png)
