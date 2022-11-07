@@ -147,7 +147,7 @@ To import the database into ArangoDB, use the following endpoint:
 
 An example using curl:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": true, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
 ~~~
 
 A partial import (at only the first stage) can also be led into the second using the endpoint:
