@@ -18,7 +18,7 @@ And shut it down (removing database data) with
 ~~~bash
 sudo docker compose down
 ~~~
-By default, the service runs on localhost port 8080, with the database on port 8529. The database is accessible by default with the credentials `user:root`, `password:openSesame`.
+By default, the service runs on [localhost:8080](localhost:8080), with the database on [localhost:8529](localhost:8529). The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
 Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
