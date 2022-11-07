@@ -251,6 +251,77 @@ Ramp-up time represents the amount of time in seconds necessary for all testing 
 
 Be advised that tests for non-optimized `meanings`, `etymologies`, `usageexamples`, `synonyms`, `antonyms`, `diminutives` and `augmentatives` call endpoints only working for the first stage of import, while `optimized` versions work only for the second. In this manner, performance between the two can be compared.
 
+Available tests are as follows:
+* For import:
+    * import_partial
+    * import_full
+    * import_optimize
+* For initial import stage:
+    * Antonyms:
+        * antonyms
+        * antonyms_non_null
+        * antonyms_null
+    * Augmentatives:
+        * augmentatives
+        * augmentatives_non_null
+        * augmentatives_null
+    * Diminutives:
+        * diminutives
+        * diminutives_non_null
+        * diminutives_null
+    * Etymologies:
+        * etymologies
+        * etymologies_non_null
+        * etymologies_null
+    * Meanings:
+        * meanings
+        * meanings_non_null
+        * meanings_null
+    * Synonyms:
+        * synonyms
+        * synonyms_non_null
+        * synonyms_null
+    * Usage examples:
+        * usageexamples
+        * usageexamples_non_null
+        * usageexamples_null
+* For optimized import stage:
+    * Antonyms:
+        * optimized_antonyms
+        * optimized_antonyms_non_null
+        * optimized_antonyms_null
+    * Augmentatives:
+        * optimized_augmentatives
+        * optimized_augmentatives_non_null
+        * optimized_augmentatives_null
+    * Diminutives:
+        * optimized_diminutives
+        * optimized_diminutives_non_null
+        * optimized_diminutives_null
+    * Etymologies:
+        * optimized_etymologies
+        * optimized_etymologies_non_null
+        * optimized_etymologies_null
+    * Meanings:
+        * optimized_meanings
+        * optimized_meanings_non_null
+        * optimized_meanings_null
+    * Synonyms:
+        * optimized_synonyms
+        * optimized_synonyms_non_null
+        * optimized_synonyms_null
+    * Usage examples:
+        * optimized_usageexamples
+        * optimized_usageexamples_non_null
+        * optimized_usageexamples_null
+* For any import stage:
+    * levenshtein
+    * regex
+    * knn:
+        * knn_hamming
+        * knn_lcs
+        * knn_levenshtein
+
 To start one of the tests, use the following one liner inside the repo root directory (detailed explanation [here](https://www.perfmatrix.com/jmeter-docker-test-executions/)):
 ~~~bash
 TEST=knn_levenshtein && TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=host swethapn14/repo_perf:JmeterLatest -Jthreads=100 -Jrampup=10 -Jloops=1 -n -t /workspace/${TEST}/${TEST}.jmx -l /workspace/logs/${TEST}.jtl -f -e -o /workspace/html/${TEST}
