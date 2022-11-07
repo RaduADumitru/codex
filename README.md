@@ -10,11 +10,11 @@ then
 ~~~bash
 sudo docker compose up
 ~~~
-Stop the service with
+Stop the service (while preserving database data) with
 ~~~bash
 sudo docker compose stop
 ~~~
-And shut it down with
+And shut it down (removing database data) with
 ~~~bash
 sudo docker compose down
 ~~~
@@ -23,7 +23,7 @@ By default, the service runs on localhost port 8080, with the database on port 8
 
 Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
-The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each. 
+The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each, to ensure integrity of data. 
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
