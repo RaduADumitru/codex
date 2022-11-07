@@ -13,6 +13,7 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
 import org.project.codex.enums.ArangoDataType;
+import org.project.codex.enums.JsonSchemaDataType;
 import org.project.codex.exceptions.ImportException;
 import org.project.codex.forms.OptimizeImportForm;
 import org.project.codex.repository.QueryRepository;
@@ -35,6 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
@@ -179,6 +183,31 @@ public class ImportController {
                             if(!importSchema.get("generatedEdgeCollections").get(generatedCollection).get(directionName).has(directionField)) {
                                 throw new ImportException("Import schema: generated edge collection " + generatedCollection + " missing attribute '" + directionField + "' in field '" + directionName + "'!");
                             }
+                        }
+                    }
+                }
+
+                HashSet<String> validJSONschemaTypes = new HashSet<>(List.of("integer", "string", "number", "boolean", "null"));
+                //Check if any properties are missing type
+                for(String collection : importSchemaCollections) {
+                    for (Iterator<String> it = importSchema.get("collections").get(collection).get("rule").get("properties").fieldNames(); it.hasNext(); ) {
+                        String property = it.next();
+                        if(!importSchema.get("collections").get(collection).get("rule").get("properties").get(property).has("type")) {
+                            throw new ImportException("Import schema, collection " + collection + ", attribute " + property + ": missing type!");
+                        }
+                        if(!validJSONschemaTypes.contains(importSchema.get("collections").get(collection).get("rule").get("properties").get(property).get("type").textValue())) {
+                            throw new ImportException("Import schema, collection " + collection + ", attribute " + property + " has an invalid type! (needs to be one of " + validJSONschemaTypes);
+                        }
+                    }
+                }
+                for(String collection : importSchemaEdgeCollections) {
+                    for (Iterator<String> it = importSchema.get("edgeCollections").get(collection).get("schema").get("rule").get("properties").fieldNames(); it.hasNext(); ) {
+                        String property = it.next();
+                        if(!importSchema.get("edgeCollections").get(collection).get("schema").get("rule").get("properties").get(property).has("type")) {
+                            throw new ImportException("Import schema, collection " + collection + ", attribute " + property + ": missing type!");
+                        }
+                        if(!validJSONschemaTypes.contains(importSchema.get("edgeCollections").get(collection).get("schema").get("rule").get("properties").get(property).get("type").textValue())) {
+                            throw new ImportException("Import schema, edge collection " + collection + ", attribute " + property + " has an invalid type! (needs to be one of " + validJSONschemaTypes);
                         }
                     }
                 }
@@ -347,6 +376,17 @@ public class ImportController {
 
                                     if (itemsList instanceof ExpressionList) {
                                         List<Expression> rowList = ((ExpressionList) itemsList).getExpressions();
+
+                                        //Store JSONschema types of each property
+                                        HashMap<String, JsonSchemaDataType> JSONschemaAttributeType = new HashMap<>();
+                                        for (ColumnData colData : colDataMap.get(currentCollectionName)) {
+                                            if(isDocumentCollection) {
+                                                JSONschemaAttributeType.put(colData.getColumnName(), JsonSchemaDataType.valueOf(importSchema.get("collections").get(currentCollectionName).get("rule").get("properties").get(colData.getColumnName()).get("type").textValue().toUpperCase()));
+                                            }
+                                            else {
+                                                JSONschemaAttributeType.put(colData.getColumnName(), JsonSchemaDataType.valueOf(importSchema.get("edgeCollections").get(currentCollectionName).get("schema").get("rule").get("properties").get(colData.getColumnName()).get("type").textValue().toUpperCase()));
+                                            }
+                                        }
                                         for (Expression row : rowList) {
                                             //where values for a row will be stored
                                             List expressionValues = new ArrayList();
@@ -432,56 +472,154 @@ public class ImportController {
                                             for (ColumnData colData : colDataMap.get(currentCollectionName)) {
                                                 Expression valueExpression = rowExpressionList.get(colData.getPosition());
 
+
+                                                JsonSchemaDataType schemaDataType = JSONschemaAttributeType.get(colData.getColumnName());
                                                 // Add values
-                                                if (valueExpression instanceof StringValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.STRING)) {
-                                                        //ArangoDB doesn't escape double quotes added for SQL parsing; replace them manually
-                                                        expressionValues.add((((StringValue) valueExpression).getValue()).replace("''", "'"));
-                                                    } else {
-                                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected String!");
-                                                    }
-                                                } else if (valueExpression instanceof DoubleValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.NUMBER)) {
-                                                        expressionValues.add(((DoubleValue) valueExpression).getValue());
-                                                    } else {
-                                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Double!");
-                                                    }
-                                                } else if (valueExpression instanceof LongValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.NUMBER)) {
-                                                        expressionValues.add(((LongValue) valueExpression).getValue());
-                                                    } else if (colData.getDataType().equals(ArangoDataType.BOOLEAN)) {
-                                                        long longValue = ((LongValue) valueExpression).getValue();
-                                                        if (longValue == 0) {
-                                                            expressionValues.add(false);
-                                                        } else if (longValue == 1) {
-                                                            expressionValues.add(true);
-                                                        } else {
-                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Boolean!");
+                                                if (schemaDataType.equals(JsonSchemaDataType.NULL)) {
+                                                    expressionValues.add(null);
+                                                }
+                                                else {
+                                                    if (valueExpression instanceof StringValue) {
+                                                        String value = ((StringValue) valueExpression).getValue().replace("''", "'");
+                                                        if (schemaDataType.equals(JsonSchemaDataType.STRING)) {
+                                                            //ArangoDB doesn't escape double quotes added for SQL parsing; replace them manually
+                                                            expressionValues.add(value);
+                                                        } else if (schemaDataType.equals(JsonSchemaDataType.BOOLEAN)) {
+                                                            try {
+                                                                if(value.equals("0") || value.equals("false")) {
+                                                                    expressionValues.add(false);
+                                                                }
+                                                                else if(value.equals("1") || value.equals("true")) {
+                                                                    expressionValues.add(true);
+                                                                }
+                                                                else {
+                                                                    throw new IllegalArgumentException();
+                                                                }
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + "couldn't convert string value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.INTEGER)) {
+                                                            try {
+                                                                expressionValues.add(Integer.valueOf(value));
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert string value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.NUMBER)) {
+                                                            try {
+                                                                expressionValues.add(Double.valueOf(value));
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert string value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else {
+                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": schema data type could not be determined!");
                                                         }
                                                     }
-                                                } else if (valueExpression instanceof NullValue) {
-                                                    expressionValues.add(null);
-                                                } else if (valueExpression instanceof DateValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.STRING)) {
-                                                        expressionValues.add(((DateValue) valueExpression).getValue().toString());
-                                                    } else {
-                                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Date!");
+                                                    else
+                                                    if (valueExpression instanceof DoubleValue) {
+                                                        Double value = ((DoubleValue) valueExpression).getValue();
+                                                        if (schemaDataType.equals(JsonSchemaDataType.NUMBER)) {
+                                                            expressionValues.add(value);
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.STRING)) {
+                                                            expressionValues.add(String.valueOf(value));
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.INTEGER)) {
+                                                            try {
+                                                                expressionValues.add(Integer.valueOf(String.valueOf(value)));
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert double value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.BOOLEAN)) {
+                                                            try {
+                                                                if(value == 0) {
+                                                                    expressionValues.add(false);
+                                                                }
+                                                                else if(value == 1) {
+                                                                    expressionValues.add(true);
+                                                                }
+                                                                else {
+                                                                    throw new IllegalArgumentException();
+                                                                }
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch:  collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + "couldn't convert double value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else {
+                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": schema data type could not be determined!");
+                                                        }
                                                     }
-                                                } else if (valueExpression instanceof TimeValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.STRING)) {
-                                                        expressionValues.add(((TimeValue) valueExpression).getValue().toString());
-                                                    } else {
-                                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Time!");
+                                                    else if (valueExpression instanceof LongValue) {
+                                                        Long value = ((LongValue)valueExpression).getValue();
+                                                        if (schemaDataType.equals(JsonSchemaDataType.INTEGER)) {
+                                                            expressionValues.add(value);
+                                                        }
+                                                        else if (schemaDataType.equals(JsonSchemaDataType.NUMBER)) {
+                                                            expressionValues.add(Double.valueOf(value));
+                                                        }
+                                                        else if(schemaDataType.equals(JsonSchemaDataType.STRING)) {
+                                                            expressionValues.add(String.valueOf(value));
+                                                        }
+                                                        else if (schemaDataType.equals(JsonSchemaDataType.BOOLEAN)) {
+                                                            try {
+                                                                if(value == 0) {
+                                                                    expressionValues.add(false);
+                                                                }
+                                                                else if(value == 1) {
+                                                                    expressionValues.add(true);
+                                                                }
+                                                                else {
+                                                                    throw new IllegalArgumentException();
+                                                                }
+                                                            }
+                                                            catch(Exception e){
+                                                                throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert long value " + value + " to " + schemaDataType);
+                                                            }
+                                                        }
+                                                        else {
+                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": schema data type could not be determined!");
+                                                        }
                                                     }
-                                                } else if (valueExpression instanceof TimestampValue) {
-                                                    if (colData.getDataType().equals(ArangoDataType.STRING)) {
-                                                        expressionValues.add(((TimestampValue) valueExpression).getValue().toString());
-                                                    } else {
-                                                        throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + " attribute " + colData.getColumnName() + ": expected Timestamp!");
+                                                    else if (valueExpression instanceof NullValue) {
+                                                        expressionValues.add(null);
                                                     }
-                                                } else {
-                                                    throw new ImportException("SQL parsing error: type for expression + " + valueExpression + " in collection " + currentCollectionName + "could not be determined!");
+                                                    else if (valueExpression instanceof DateValue) {
+                                                        Date value = ((DateValue) valueExpression).getValue();
+                                                        if (schemaDataType.equals(JsonSchemaDataType.STRING)) {
+                                                            expressionValues.add(value.toString());
+                                                        } else {
+                                                            throw new ImportException("Import schema type mismatch:  collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + "couldn't convert date value " + value + " to " + schemaDataType);
+                                                        }
+                                                    }
+                                                    else if (valueExpression instanceof TimeValue) {
+                                                        Time value = ((TimeValue) valueExpression).getValue();
+                                                        if (schemaDataType.equals(JsonSchemaDataType.STRING)) {
+                                                            expressionValues.add(value.toString());
+                                                        } else {
+                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert time value " + value + " to " + schemaDataType);
+                                                        }
+                                                    }
+                                                    else if (valueExpression instanceof TimestampValue) {
+                                                        Timestamp value = ((TimestampValue) valueExpression).getValue();
+                                                        if (colData.getDataType().equals(ArangoDataType.STRING)) {
+                                                            expressionValues.add(value.toString());
+                                                        } else {
+                                                            throw new ImportException("Import schema type mismatch: collection " + currentCollectionName + ", attribute " + colData.getColumnName() + ": " + " couldn't convert timestamp value " + value + " to " + schemaDataType);
+                                                        }
+                                                    }
+                                                    else {
+                                                        throw new ImportException("SQL parsing error: type for expression + " + valueExpression + " in collection " + currentCollectionName + "could not be determined!");
+                                                    }
                                                 }
+
                                             }
                                             insertRequestBody.append('\n').append(JSONArray.toJSONString(expressionValues));
                                         }
