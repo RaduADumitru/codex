@@ -21,11 +21,16 @@ sudo docker compose down
 By default, the service runs on localhost port 8080, with the database on port 8529. The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
-Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
+Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
-The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each.
+The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each. 
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
+
+
+Each stage has its own corresponding endpoints which can be called for searches (further described in [Search Endpoints](#search-endpoints)). For example, to get meanings of a word:
+* For initial import stage: `codex/search/meanings`
+* For optimized import stage: `codex/optimizedsearch/meanings`
 
 As of now, the second phase is centered around data of lexemes (essentially words, with homonyms having separate lexemes each). The [Lexeme](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table) collection will be updated so that a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection [Relation](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Relation-table) will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
 
