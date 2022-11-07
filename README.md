@@ -57,7 +57,8 @@ On an **optimized** import, a graph depicting lexemes and their relations will b
 To visualise from inside the database web interface:
 
 * Go to `Graphs` and select `LexemeRelationGraph`
-* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type` in the settings on the right
+* click on the top right `≡` button
+* Recommended to set Nodes attribute to `formNoAccent` and Edges attribute to `type` in the settings on the right
 * Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
 
 Result should look similar to this:
