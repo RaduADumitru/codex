@@ -23,14 +23,117 @@ By default, the service runs on [localhost:8080](http:/localhost:8080), with the
 
 Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
-The import can be achieved in **two** phases, defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each, to ensure integrity of data. 
+The import can be achieved in **two** phases, 
 
 The first stage is meant to simulate the structure of the original SQL database, with searches being able to be executed in a similar manner as in SQL. On the other hand, the second represents an optimized and more compact version built off of the first, for more efficient searches. 
 
+To avoid idle timeouts resulting from excessively large transactions, the import can be paginated, so that certain large queries will be split into smaller ones, leading to increased stability.
+
+### How to import
+
+To import the database into ArangoDB, use the following endpoint:
+* `codex/import/import`: POST - parameters `boolean complete` (whether to also execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
+
+An example using curl:
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
+~~~
+
+A partial import (at only the first stage) can also be led into the second using the endpoint:
+* `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success:
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
+~~~
+
+To verify the results, you can enter the database's web interface:
+
+* Access the database (default [localhost:8529](localhost:8529)) in a web browser
+* login (default username `root`, password `openSesame`)
+* access the database `dex`
+
+### Visualisation
+On an **optimized** import, a graph depicting lexemes and their relations will be automatically generated for visualization.
+
+To visualise from inside the database web interface:
+
+* Go to `Graphs` and select `LexemeRelationGraph`
+* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type` in the settings on the right
+* Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
+
+Result should look similar to this:
+![screenshot](images/graph_example.png)
 
 Each stage has its own corresponding endpoints which can be called for searches (further described in [Search Endpoints](#search-endpoints)). For example, to get meanings of a word:
 * For initial import stage: `codex/search/meanings`
 * For optimized import stage: `codex/optimizedsearch/meanings`
+
+
+## Search Endpoints
+After importing the database in one of its two stages, the following endpoints can be used for searches.
+
+Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent: for example `abager'ie` vs. `abagerie` ), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`). 
+
+All searches are case sensitive and diacritics-sensitive.
+
+Some endpoints function only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
+### Endpoints only for initial import
+* `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "meaningtype": "proper_meaning", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/meanings"
+~~~
+* `codex/search/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/relation"
+~~~
+### Endpoints only for optimized import
+* `codex/optimizedsearch/meanings`: POST - parameters `String word`, `String wordform` - returns array of strings representing meanings of `word`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "mașină", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/meanings"
+~~~
+* `codex/optimizedsearch/etymologies`: POST - parameters `String word`, `String wordform` - returns array of objects representing etymologies of `word`. These objects represent pairings of the etymology's original word, and a tag describing its origin (language), both represented as strings.
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/etymologies"
+~~~
+* `codex/optimizedsearch/usageexamples`: POST - parameters `String word`, `String wordform` - returns array of strings representing usage example phrases containing `word`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/usageexamples"
+~~~
+* `codex/optimizedsearch/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/relation"
+~~~
+### Endpoints usable for any stage of import
+* `codex/search/levenshtein`: POST - parameters `String word`, `Integer distance`, `String wordform` - returns array of words with a Levenshtein distance of maximum `dist` from `word`, using the specified `wordform`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "ecumenic", "distance": 3, "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/levenshtein"
+~~~
+* `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` (ArangoDB has its own Regex syntax, as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#regular-expression-syntax)) using specified `wordform`. 
+
+How the project's name was found :)
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"regex": "%dex%", "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/regex"
+~~~
+#### KNN Endpoints
+* `codex/knn/editdistance`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `levenshtein`, `hamming` or `lcs_distance`), `Integer neighborcount` - returns array of strings representing K nearest neighbors using given `distancetype`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance
+~~~
+* `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_similarity)) or `ngram_positional_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_positional_similarity))), `Integer neighborcount`, `Integer ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
+~~~bash
+curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "ngram_similarity", "neighborcount": 10, "ngramsize": 3}' -X POST "localhost:8080/codex/knn/ngram"
+~~~
+### Sandbox/Testing endpoints
+* `codex/system/schema/collection`: GET - returns array of collections in database
+* `codex/system/schema/key_types`: POST - parameter `String collection` - for each key in collection, returns types of values: response represented as array of key-type pairs
+* `codex/system/collection/is_edge_collection`: POST - parameter `String collection` - returns a boolean value representing whether collection is edge collection
+* `codex/system/collection/edge_relations`: POST - parameter `String collection` - return an array of string pairs, representing each pair of collections connected in specified edge collection
+* `codex/system/schema/key_types_all`: GET - returns key types of all collections, as a JSON object in a format of `collection: key_types`, for each collection, as in `key_types` endpoint
+* `codex/system/schema/edge_relations_all`: GET - returns edge relations of all collections, as a JSON object in format of `collection: edge_relations` for each collection, as in `edge_relations` endpoint
+* `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
+* `codex/import/version`: GET - returns ArangoDB database version
+
+## Import Schemas
+The structure of the database during both of the import stages is defined by the schema files `codex/src/main/resources/import-schema.json` and `codex/src/main/resources/final-schema.json`, which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each, to ensure integrity of data. 
 
 As of now, the second phase is centered around data of lexemes (essentially words, with homonyms having separate lexemes each). The [Lexeme](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table) collection will be updated so that a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection [Relation](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Relation-table) will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
 
@@ -139,105 +242,7 @@ It is highly recommended not to remove any of the predefined collections or attr
 
 Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt.
 
-To avoid idle timeouts resulting from excessively large transactions, the import can be paginated, so that certain large queries will be split into smaller ones, leading to increased stability.
-
-### How to import
-To import the database into ArangoDB, use the following endpoint:
-* `codex/import/import`: POST - parameters `boolean complete` (whether to also execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
-
-An example using curl:
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
-~~~
-
-A partial import (at only the first stage) can also be led into the second using the endpoint:
-* `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success:
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
-~~~
-
-To verify the results, you can enter the database's web interface:
-
-* Access the database (default [localhost:8529](localhost:8529)) in a web browser
-* login (default username `root`, password `openSesame`)
-* access the database `dex`
-
-### Visualisation
-On an **optimized** import, a graph depicting lexemes and their relations will be automatically generated for visualization.
-
-To visualise from inside the database web interface:
-
-* Go to `Graphs` and select `LexemeRelationGraph`
-* Recommended to set vertex attribute to `formNoAccent` and edge attribute to `type` in the settings on the right
-* Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
-
-Result should look similar to this:
-![screenshot](images/graph_example.png)
-## Search Endpoints
-After importing the database in one of its two stages, the following endpoints can be used for searches.
-
-Endpoints for searches have a number of similar fields: `wordform` represents the form to search against (either `accent` for accented forms, or `noaccent` for forms without accent: for example `abager'ie` vs. `abagerie` ), `relationtype` represents a relationship between two words (`synonym`, `antonym`, `diminutive` or `augmentative`). 
-
-All searches are case sensitive and diacritics-sensitive.
-
-Some endpoints function only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
-### Endpoints only for initial import
-* `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "meaningtype": "proper_meaning", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/meanings"
-~~~
-* `codex/search/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/relation"
-~~~
-### Endpoints only for optimized import
-* `codex/optimizedsearch/meanings`: POST - parameters `String word`, `String wordform` - returns array of strings representing meanings of `word`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "mașină", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/meanings"
-~~~
-* `codex/optimizedsearch/etymologies`: POST - parameters `String word`, `String wordform` - returns array of objects representing etymologies of `word`. These objects represent pairings of the etymology's original word, and a tag describing its origin (language), both represented as strings.
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/etymologies"
-~~~
-* `codex/optimizedsearch/usageexamples`: POST - parameters `String word`, `String wordform` - returns array of strings representing usage example phrases containing `word`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/usageexamples"
-~~~
-* `codex/optimizedsearch/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/relation"
-~~~
-### Endpoints usable for any stage of import
-* `codex/search/levenshtein`: POST - parameters `String word`, `Integer distance`, `String wordform` - returns array of words with a Levenshtein distance of maximum `dist` from `word`, using the specified `wordform`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "ecumenic", "distance": 3, "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/levenshtein"
-~~~
-* `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` (ArangoDB has its own Regex syntax, as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#regular-expression-syntax)) using specified `wordform`. 
-
-How the project's name was found :)
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"regex": "%dex%", "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/regex"
-~~~
-#### KNN Endpoints
-* `codex/knn/editdistance`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `levenshtein`, `hamming` or `lcs_distance`), `Integer neighborcount` - returns array of strings representing K nearest neighbors using given `distancetype`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance
-~~~
-* `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_similarity)) or `ngram_positional_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_positional_similarity))), `Integer neighborcount`, `Integer ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
-~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "ngram_similarity", "neighborcount": 10, "ngramsize": 3}' -X POST "localhost:8080/codex/knn/ngram"
-~~~
-### Sandbox/Testing endpoints
-* `codex/system/schema/collection`: GET - returns array of collections in database
-* `codex/system/schema/key_types`: POST - parameter `String collection` - for each key in collection, returns types of values: response represented as array of key-type pairs
-* `codex/system/collection/is_edge_collection`: POST - parameter `String collection` - returns a boolean value representing whether collection is edge collection
-* `codex/system/collection/edge_relations`: POST - parameter `String collection` - return an array of string pairs, representing each pair of collections connected in specified edge collection
-* `codex/system/schema/key_types_all`: GET - returns key types of all collections, as a JSON object in a format of `collection: key_types`, for each collection, as in `key_types` endpoint
-* `codex/system/schema/edge_relations_all`: GET - returns edge relations of all collections, as a JSON object in format of `collection: edge_relations` for each collection, as in `edge_relations` endpoint
-* `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
-* `codex/import/version`: GET - returns ArangoDB database version
-
-### Performance tests
+## Performance tests
 The folder `tests` contains a number of Jmeter performance / load tests. Many also have `not_null` and `null` versions, which perform requests returning only non null values, and null values respectively.
 
 Number of threads, rampup time and number of loops can be specified through the command line parameters `-Jthreads`, `-Jrampup` and `-Jloops` respectively (default value is 1 for each).
