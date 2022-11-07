@@ -18,8 +18,8 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">${__P(loops,1)}</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">${__P(threads,1)}</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">${__P(rampup,1)}</stringProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(threads,100)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(rampup,10)}</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
         <stringProp name="ThreadGroup.delay"></stringProp>
@@ -33,7 +33,7 @@
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
                 <stringProp name="Argument.value">{&#xd;
-	&quot;word&quot;: &quot;${word}&quot;,&#xd;
+	&quot;word&quot;: &quot;Î&quot;,&#xd;
 	&quot;wordform&quot;: &quot;noaccent&quot;,&#xd;
 	&quot;distancetype&quot;: &quot;levenshtein&quot;,&#xd;
 	&quot;neighborcount&quot;: ${__P(neighborcount,5)}&#xd;
@@ -45,7 +45,7 @@
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">8080</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
-          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
           <stringProp name="HTTPSampler.path">/codex/knn/editdistance</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
