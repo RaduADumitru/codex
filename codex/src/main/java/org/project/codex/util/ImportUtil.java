@@ -12,8 +12,8 @@ import java.util.*;
 
 public class ImportUtil {
     private static ImportUtil instance = null;
-    private ObjectMapper objectMapper;
-    private OkHttpClient okHttpClient;
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private OkHttpClient okHttpClient = new OkHttpClient();
     private String credentials;
     private String baseRequestUrl;
     private ImportUtil() {

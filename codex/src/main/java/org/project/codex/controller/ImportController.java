@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 
+@PropertySource(value = "classpath:application.properties")
 @PropertySource(value = "classpath:arangodb.properties")
 @RestController
 @RequestMapping("/codex/import/")
@@ -61,7 +62,8 @@ public class ImportController {
     @Value("${arangodb.password}")
     private String arangoDbPassword;
     private AtomicBoolean importing = new AtomicBoolean(false);
-    private final String downloadLink = "https://dexonline.ro/static/download/dex-database.sql.gz";
+    @Value("${import.link}")
+    private String downloadLink;
     public ImportController(QueryRepository repository) {
         this.repository = repository;
     }
@@ -95,10 +97,11 @@ public class ImportController {
         else {
             importing.compareAndSet(false, true);
             try {
-                ImportUtil.deleteGraph("LexemeRelationGraph");
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
                 ImportUtil.getInstance().setCredentials(Credentials.basic(arangoDbUser, arangoDbPassword));
+
+                ImportUtil.deleteGraph("LexemeRelationGraph");
 
                 //open import schema file and store it in JsonNode for traversal
 
@@ -228,12 +231,15 @@ public class ImportController {
                 //Delete all collections, so import is fresh
                 ImportUtil.deleteCollections(repository.getCollections());
 
-                try(InputStream stream = new GZIPInputStream(url.openStream()); Scanner sc = new Scanner(stream, StandardCharsets.UTF_8)) {
+//                try(InputStream stream = new GZIPInputStream(url.openStream()); Scanner sc = new Scanner(stream, StandardCharsets.UTF_8)) {
+                try(InputStream stream = new GZIPInputStream(url.openStream()); BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
                     // traverse each line of script;
                     // starting from lines containing keyword CREATE, Create statements will be built until reaching ;, then parsed and executed according to schema
                     //lines containing INSERT will be treated as insert statements, and parsed if collection is in schema: attributes in schema will be inserted
-                    while (sc.hasNextLine()) {
-                        String line = sc.nextLine();
+//                    while (sc.hasNextLine()) {
+                    String line;
+                    while((line = reader.readLine()) != null)
+//                        String line = sc.nextLine();
                         if (buildingCreateStatement) {
                             //check if line reached is not end of create statement
                             if (line.indexOf(';') == -1) {
@@ -344,9 +350,18 @@ public class ImportController {
                             //parse if in collection, and send request
                             if (line.startsWith("INSERT")) {
                                 if (isDocumentCollection || isEdgeCollection) {
-                                    //JSQLparser does not support backslash escape character in statements, only double commas
-                                    line = line.replace("\\'", "''");
+                                    //Import script is MySQL script and uses \ escape character
+                                    //JSQLparser treats both \ and ' as escape characters, and bugs out when one escapes the other; they need to be separated, and \' replaced with ''
+                                    line = line
+                                            .replaceAll("([^\\\\])((\\\\\\\\)+)([\\\\'])", "$1$2 $4") //Separates non escaping backslashes from apostrophes with a space
+                                            .replace("\\'", "''") //Transforms backslash escaped apostrophes into double apostrophe escape
+                                            .replace("'\\", "' \\") //MySQL doesn't use commas as escape character, separate so that they are not interpreted as escape
+                                            .replace("\u2028", ""); //remove line separator character; bugs out parser. Remove any more such unsupported characters if they appear!
+                                    ;
                                     Insert insert = (Insert) CCJSqlParserUtil.parse(line);
+                                    if(insert == null) {
+                                        throw new ImportException("Line: " + line + "\nCould not parse insert! (Possibly due to unsupported character inside)");
+                                    }
                                     ItemsList itemsList = insert.getItemsList();
 
                                     insertRequestBody = new StringBuilder();
@@ -480,7 +495,10 @@ public class ImportController {
                                                 }
                                                 else {
                                                     if (valueExpression instanceof StringValue) {
-                                                        String value = ((StringValue) valueExpression).getValue().replace("''", "'");
+                                                        String value = ((StringValue) valueExpression).getValue()
+                                                                .replace("''", "'")
+                                                                .trim()
+                                                                .replace("\\ '", "\\'");
                                                         if (schemaDataType.equals(JsonSchemaDataType.STRING)) {
                                                             //ArangoDB doesn't escape double quotes added for SQL parsing; replace them manually
                                                             expressionValues.add(value);
@@ -672,7 +690,6 @@ public class ImportController {
                             }
                         }
                     }
-                }
                 System.out.println("Initial data import complete!");
                 System.out.println("Creating generated collections:");
 
