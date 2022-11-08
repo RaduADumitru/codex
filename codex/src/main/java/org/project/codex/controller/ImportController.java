@@ -231,15 +231,12 @@ public class ImportController {
                 //Delete all collections, so import is fresh
                 ImportUtil.deleteCollections(repository.getCollections());
 
-//                try(InputStream stream = new GZIPInputStream(url.openStream()); Scanner sc = new Scanner(stream, StandardCharsets.UTF_8)) {
                 try(InputStream stream = new GZIPInputStream(url.openStream()); BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
                     // traverse each line of script;
                     // starting from lines containing keyword CREATE, Create statements will be built until reaching ;, then parsed and executed according to schema
                     //lines containing INSERT will be treated as insert statements, and parsed if collection is in schema: attributes in schema will be inserted
-//                    while (sc.hasNextLine()) {
                     String line;
                     while((line = reader.readLine()) != null)
-//                        String line = sc.nextLine();
                         if (buildingCreateStatement) {
                             //check if line reached is not end of create statement
                             if (line.indexOf(';') == -1) {
@@ -356,7 +353,6 @@ public class ImportController {
                                             .replaceAll("([^\\\\])((\\\\\\\\)+)([\\\\'])", "$1$2 $4") //Separates non escaping backslashes from apostrophes with a space
                                             .replace("\\'", "''") //Transforms backslash escaped apostrophes into double apostrophe escape
                                             .replace("'\\", "' \\") //MySQL doesn't use commas as escape character, separate so that they are not interpreted as escape
-                                            .replace("\u2028", ""); //remove line separator character; bugs out parser. Remove any more such unsupported characters if they appear!
                                     ;
                                     Insert insert = (Insert) CCJSqlParserUtil.parse(line);
                                     if(insert == null) {
