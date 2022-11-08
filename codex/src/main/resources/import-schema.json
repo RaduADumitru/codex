@@ -88,21 +88,6 @@
       },
       "level": "strict",
       "message": "Tag could not be inserted!"
-    },
-    "Definition": {
-      "rule": {
-        "properties": {
-          "internalRep": {
-            "type": "string"
-          },
-          "status": {
-            "type": "integer",
-            "enum": [0, 1, 2, 3]
-          }
-        }
-      },
-      "level": "strict",
-      "message": "Definition could not be inserted!"
     }
   },
   "edgeCollections":{
