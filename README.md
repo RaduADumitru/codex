@@ -62,6 +62,7 @@ To visualise from inside the database web interface:
 * Enter an ArangoDB _id (`Lexeme/(number)`, for instance `Lexeme/345`) inside `Graph StartNode`
 
 Result should look similar to this:
+
 ![screenshot](images/graph_example.png)
 
 Each stage has its own corresponding endpoints which can be called for searches (further described in [Search Endpoints](#search-endpoints)). For example, to get meanings of a word:
