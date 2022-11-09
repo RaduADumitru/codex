@@ -4,11 +4,7 @@ This Web API allows for migrating the database of the online Romanian Dictionary
 
 For startup, you can use the corresponding Docker Compose service. For example: 
 ~~~bash
-sudo docker compose build
-~~~
-then
-~~~bash
-sudo docker compose up
+sudo docker compose up --build
 ~~~
 Stop the service (while preserving database data) with
 ~~~bash
@@ -250,7 +246,10 @@ Other than these, only the specified properties (SQL columns) of a document will
 
 It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
-Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt.
+Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt, for example by starting it with the `-build flag`:
+~~~bash
+sudo docker compose up --build
+~~~
 
 ## Performance tests
 The folder `tests` contains a number of Jmeter performance / load tests. Many also have `not_null` and `null` versions, which perform requests returning only non null values, and null values respectively.
