@@ -21,7 +21,7 @@ sudo docker compose down
 By default, the service runs on [localhost:8080](http:/localhost:8080), with the database on [localhost:8529](http:/localhost:8529). The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
-Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible by default [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
+Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible by default [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing. The import link can be configured in [application.properties](codex/src/main/resources/application.properties).
 
 The import can be achieved in **two** phases:
 
