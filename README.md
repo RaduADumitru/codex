@@ -88,7 +88,7 @@ All searches are case sensitive and diacritics-sensitive.
 
 Some endpoints function only for the first import stage, while others only for the second. Their functionalities are similar, but searches are executed in a different manner: while the first rely on graph traversals, the second rely on simple lookups, leading to a performance boost.
 ### Endpoints only for initial import
-* `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
+* `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`(Meanings of compound expressions containing word)), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "meaningtype": "proper_meaning", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/meanings"
 ~~~
