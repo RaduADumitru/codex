@@ -21,7 +21,7 @@ sudo docker compose down
 By default, the service runs on [localhost:8080](http:/localhost:8080), with the database on [localhost:8529](http:/localhost:8529). The database is accessible by default with the credentials `user:root`, `password:openSesame`.
 ## Import
 
-Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
+Before any searches can be executed, the database has to be imported. Data will be imported from the DEXonline's database initialization script (accesible by default [here](https://dexonline.ro/static/download/dex-database.sql.gz)) through SQL parsing.
 
 The import can be achieved in **two** phases:
 
@@ -32,7 +32,7 @@ To avoid idle timeouts resulting from excessively large transactions, the import
 ### How to import
 
 To import the database into ArangoDB, use the following endpoint:
-* `codex/import/import`: POST - parameters `boolean complete` (whether to also execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended) - returns the string `Import complete` on a success
+* `codex/import/import`: POST - parameters `boolean complete` (whether to also execute second phase of import, or only the first), `integer pagecount` (number of small subqueries to split large queries into - minimum 10 recommended - 0 for no pagination) - returns the string `Import complete` on a success
 
 An example using curl to import into the first stage:
 ~~~bash
@@ -44,6 +44,8 @@ A partial import (at only the first stage) can also be led into the second using
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
 ~~~
+
+Before starting a new import, and on any errors during import, content of the database will be deleted, to avoid conflicts.
 
 To verify the results, you can enter the database's web interface:
 
@@ -108,9 +110,9 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "ecumenic", "distance": 3, "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/levenshtein"
 ~~~
-* `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` (ArangoDB has its own Regex syntax, as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#regular-expression-syntax)) using specified `wordform`. 
+* `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` using specified `wordform`. (ArangoDB has its own Regex syntax, as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#regular-expression-syntax))
 
-How the project's name was found :)
+How the project's name was found :) (request below returns words containing the string "dex")
 ~~~bash
 curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"regex": "%dex%", "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/regex"
 ~~~
@@ -133,7 +135,7 @@ curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data 
 * `codex/system/schema/schema`: GET - documents and returns schema of database, in format `{keyTypeMap: key_types_all, edgeRelationsMap: edge_relations_all}`, as in previous two requests
 * `codex/import/version`: GET - returns ArangoDB database version
 
-## Import Schemas
+## Import configuration through schema files
 The structure of the database during both of the import stages is defined by the schema files [import-schema.json](codex/src/main/resources/import-schema.json) and [final-schema.json](codex/src/main/resources/final-schema.json), which describe the collections (SQL tables) and attributes (SQL columns) to be imported, along with validation rules for each, to ensure integrity of data. 
 
 As of now, the second phase is centered around data of lexemes (essentially words, with homonyms having separate lexemes each). The [Lexeme](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Lexeme-table) collection will be updated so that a lexeme's meanings, usage examples and etymologies will be inserted inside the lexeme document instead of being stored in other collections, so that they can be accesed using lookups instead of graph traversals. Additionally, the edge collection [Relation](https://github.com/dexonline/dexonline/wiki/Database-schema%3A-the-Relation-table) will be changed to describe relations between two Lexemes, such as synonyms and antonyms. In doing so, lexemes with a given relation can be accesed with a simple graph traversal of distance 1, instead of traversing multiple unrelated collections, or complicated joins in SQL.
@@ -332,7 +334,7 @@ TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=hos
 ~~~
 Change the value of TEST to the desired test directory name, and set command line arguments starting with -J accordingly. Some tests also have additional optional command line parameters:
 
-* for import tests, `-Jpagecount` for the number of pages (default 0 - no pagination), 
+* for import tests, `-Jpagecount` for the number of pages (default 10 - no pagination), 
 * for KNN tests, `-Jneighborcount` for the number of neighbors (default 5),
 * for N-gram tests, `-Jngramsize` for the n-gram size (default 2)
 
