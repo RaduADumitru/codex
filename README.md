@@ -246,7 +246,7 @@ Other than these, only the specified properties (SQL columns) of a document will
 
 It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
-Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt, for example by starting it with the `-build flag`:
+Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt, for example by starting it with the `--build` flag:
 ~~~bash
 sudo docker compose up --build
 ~~~
