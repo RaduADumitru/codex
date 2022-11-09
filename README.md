@@ -155,9 +155,7 @@ The schema documents contain root fields describing three types of collections:
 ~~~json
     "Meaning":{
       "rule":{
-        "title":"Meaning",
         "description":"Meanings are hierarchical: there are main meanings which can have secondary meanings, tertiary meanings and so on. See veni (https://dexonline.ro/definitie/veni/sinteza) for an example.",
-        "type":"object",
         "properties":{
           "parentId":{
             "description":"The ID of the parent meaning in the tree. 0 or NULL means that this meaning is a root.",
