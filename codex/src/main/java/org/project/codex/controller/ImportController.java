@@ -887,9 +887,9 @@ public class ImportController {
                                 }
                             }
                         }
-                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("languages")) {
+                        if(finalSchema.get("collections").get("Lexeme").get("rule").get("properties").has("language")) {
                             // set languages; as of now only Romanian language
-                            System.out.println("Setting language:");
+                            System.out.println("Setting Romanian language:");
                             repository.setRomanianLanguage();
                         }
                     }
