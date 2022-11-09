@@ -67,6 +67,14 @@ Result should look similar to this:
 
 ![screenshot](images/graph_example.png)
 
+To visualise starting from a desired word, you can find the word's `_id` by going into the `Queries` tag on the left and using the following query (make sure to set the value of the `word` bind parameter on the right):
+~~~arangodb
+for l in Lexeme
+filter l.formNoAccent == @word
+return l._id
+~~~
+Then use the respective ID (without commas) as the start node in Graph View.
+
 Each stage has its own corresponding endpoints which can be called for searches (further described in [Search Endpoints](#search-endpoints)). For example, to get meanings of a word:
 * For initial import stage: `codex/search/meanings`
 * For optimized import stage: `codex/optimizedsearch/meanings`
