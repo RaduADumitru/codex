@@ -2,9 +2,7 @@
   "collections": {
     "Lexeme": {
       "rule": {
-        "title": "Lexeme",
         "description": "A Lexeme is essentially a word. Homonyms get separate lexemes each.",
-        "type": "object",
         "properties": {
           "form": {
             "description": "Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
@@ -62,9 +60,7 @@
       "Relation": {
         "schema": {
           "rule": {
-            "title": "Relation",
             "description": "Relation between lexemes: synonyms, diminutives, augmentatives, diminutives",
-            "type": "object",
             "properties": {
               "type": {
                 "description": "1 - synonyms, 2 - diminutives, 3 - diminutives, 4 - augmentatives",

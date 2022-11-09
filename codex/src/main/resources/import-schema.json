@@ -2,9 +2,7 @@
   "collections":{
     "Lexeme":{
       "rule":{
-        "title":"Lexeme",
         "description":"A Lexeme is essentially a word. Homonyms get separate lexemes each.",
-        "type":"object",
         "properties":{
           "form":{
             "description":"Base form of the word, including an apostrophe (') for the accent. This makes it impractical for searches.",
@@ -25,9 +23,7 @@
     },
     "Entry":{
       "rule":{
-        "title":"Entry",
         "description":"An Entry is a unit of meaning. It is a container for one or more lexemes, definitions, and meaning trees.",
-        "type":"object",
         "properties":{}
       },
       "level":"strict",
@@ -35,9 +31,7 @@
     },
     "Tree":{
       "rule":{
-        "title":"Tree",
         "description":"Trees are containers for meaning hierarchies (see the Meaning table for details).",
-        "type":"object",
         "properties":{}
       },
       "level":"strict",
@@ -45,9 +39,7 @@
     },
     "Meaning":{
       "rule":{
-        "title":"Meaning",
         "description":"Meanings are hierarchical: there are main meanings which can have secondary meanings, tertiary meanings and so on. See veni (https://dexonline.ro/definitie/veni/sinteza) for an example.",
-        "type":"object",
         "properties":{
           "parentId":{
             "description":"The ID of the parent meaning in the tree. 0 or NULL means that this meaning is a root.",
@@ -73,7 +65,6 @@
     },
     "Tag": {
       "rule": {
-        "title": "Tag",
         "description": "Tags are little bits of information attached to objects, like regional, ironic or obscene.",
         "properties": {
           "parentId": {
