@@ -902,8 +902,7 @@ public class ImportController {
                             repository.createRelationTemp();
                         }
                         else {
-                            documentCountCache.put("Relation", repository.getCollectionDocumentCount("Relation"));
-                            Integer documentCount = documentCountCache.get("Relation");
+                            Integer documentCount = documentCountCache.get("Lexeme");
                             int pageSize = (documentCount / pageCount) + 1;
                             int skip = 0;
                             for(int i = 0; i < pageCount; i++) {
