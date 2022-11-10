@@ -1,5 +1,5 @@
 # codex
-![screenshot](images/codex_nosettings.png)
+![screenshot](images/codex_main_graph.png)
 This Web API allows for migrating the database of the online Romanian Dictionary [DEXonline](https://dexonline.ro) into an ArangoDB graph database, with a number of searches able to be performed.
 
 For startup, you can use the corresponding Docker Compose service. For example: 
@@ -62,7 +62,7 @@ To visualise from inside the database web interface:
 
 Result should look similar to this:
 
-![screenshot](images/graph_example.png)
+![screenshot](images/graph_example_settings.png)
 
 To visualise starting from a desired word, you can find the word's `_id` by going into the `Queries` tag on the left and using the following query (make sure to set the value of the `word` bind parameter on the right):
 ~~~arangodb
