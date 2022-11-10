@@ -4,11 +4,7 @@ This Web API allows for migrating the database of the online Romanian Dictionary
 
 For startup, you can use the corresponding Docker Compose service. For example: 
 ~~~bash
-sudo docker compose build
-~~~
-then
-~~~bash
-sudo docker compose up
+sudo docker compose up --build
 ~~~
 Stop the service (while preserving database data) with
 ~~~bash
@@ -37,13 +33,13 @@ To import the database into ArangoDB, use the following endpoint:
 
 An example using curl to import into the first stage:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"complete": false, "pagecount": 10}' -X POST "localhost:8080/codex/import/import"
 ~~~
 
 A partial import (at only the first stage) can also be led into the second using the endpoint:
 * `codex/import/optimize`: POST - parameter `integer pagecount` - returns the string `Import complete` on a success:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"pagecount": 10}' -X POST "localhost:8080/codex/import/optimize"
 ~~~
 
 Before starting a new import, and on any errors during import, content of the database will be deleted, to avoid conflicts.
@@ -91,48 +87,48 @@ Some endpoints function only for the first import stage, while others only for t
 ### Endpoints only for initial import
 * `codex/search/meanings`: POST - parameters `String word`, `String meaningtype` (`proper_meaning`, `etymology`, `usage_example`, `comment`, `diff`, `compound_meaning`(Meanings of compound expressions containing word)), `String wordform` - returns array of strings representing "meanings" with given `meaningtype` of `word`:
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "meaningtype": "proper_meaning", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/meanings"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "meaningtype": "proper_meaning", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/meanings"
 ~~~
 * `codex/search/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/relation"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/search/relation"
 ~~~
 ### Endpoints only for optimized import
 * `codex/optimizedsearch/meanings`: POST - parameters `String word`, `String wordform` - returns array of strings representing meanings of `word`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "mașină", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/meanings"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "mașină", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/meanings"
 ~~~
 * `codex/optimizedsearch/etymologies`: POST - parameters `String word`, `String wordform` - returns array of objects representing etymologies of `word`. These objects represent pairings of the etymology's original word, and a tag describing its origin (language), both represented as strings.
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/etymologies"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/etymologies"
 ~~~
 * `codex/optimizedsearch/usageexamples`: POST - parameters `String word`, `String wordform` - returns array of strings representing usage example phrases containing `word`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/usageexamples"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "bancă", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/usageexamples"
 ~~~
 * `codex/optimizedsearch/relation`: POST - parameters `String word`, `String relationtype`, `String wordform` - returns array of strings representing words with given `relationtype` to `word`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/relation"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "alb", "relationtype": "antonym", "wordform": "noaccent"}' -X POST "localhost:8080/codex/optimizedsearch/relation"
 ~~~
 ### Endpoints usable for any stage of import
 * `codex/search/levenshtein`: POST - parameters `String word`, `Integer distance`, `String wordform` - returns array of words with a Levenshtein distance of maximum `dist` from `word`, using the specified `wordform`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "ecumenic", "distance": 3, "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/levenshtein"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "ecumenic", "distance": 3, "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/levenshtein"
 ~~~
 * `codex/search/regex`: POST - parameter `String regex`, `String wordform` - returns array of strings representing words matching the Regex expression `regex` using specified `wordform`. (ArangoDB has its own Regex syntax, as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#regular-expression-syntax))
 
 How the project's name was found :) (request below returns words containing the string "dex")
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"regex": "%dex%", "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/regex"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"regex": "%dex%", "wordform": "noaccent" }' -X POST "localhost:8080/codex/search/regex"
 ~~~
 #### KNN Endpoints
 * `codex/knn/editdistance`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `levenshtein`, `hamming` or `lcs_distance`), `Integer neighborcount` - returns array of strings representing K nearest neighbors using given `distancetype`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "lcs_distance", "neighborcount": 10}' -X POST "localhost:8080/codex/knn/editdistance"
 ~~~
 * `codex/knn/ngram`: POST - parameters `String word`, `String wordform`, `String distancetype` (either `ngram_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_similarity)) or `ngram_positional_similarity` (as described [here](https://www.arangodb.com/docs/stable/aql/functions-string.html#ngram_positional_similarity))), `Integer neighborcount`, `Integer ngramsize` - returns array of strings representing K nearest neighbors using given N-gram `distancetype` and given `ngramsize`
 ~~~bash
-curl -i -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "ngram_similarity", "neighborcount": 10, "ngramsize": 3}' -X POST "localhost:8080/codex/knn/ngram"
+curl -H "Accept: application/json" -H "Content-Type:application/json" --data '{"word": "anaaremere", "wordform": "noaccent", "distancetype": "ngram_similarity", "neighborcount": 10, "ngramsize": 3}' -X POST "localhost:8080/codex/knn/ngram"
 ~~~
 ### Sandbox/Testing endpoints
 * `codex/system/schema/collection`: GET - returns array of collections in database
@@ -250,7 +246,10 @@ Other than these, only the specified properties (SQL columns) of a document will
 
 It is highly recommended not to remove any of the predefined collections or attributes, as this may affect functionality of searches! (They were designed with the predefined schema in mind). However, any other collections or attributes present in the original SQL schema can be imported.
 
-Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt.
+Also, be advised that any changes in the import schema files will only be registered by the `docker compose` service if it is rebuilt, for example by starting it with the `--build` flag:
+~~~bash
+sudo docker compose up --build
+~~~
 
 ## Performance tests
 The folder `tests` contains a number of Jmeter performance / load tests. Many also have `not_null` and `null` versions, which perform requests returning only non null values, and null values respectively.
