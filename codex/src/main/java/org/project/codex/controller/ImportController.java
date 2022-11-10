@@ -950,6 +950,7 @@ public class ImportController {
                 EdgeDefinition edgeDefinition = new EdgeDefinition("Relation", fromList, toList);
                 ImportUtil.createGraph("LexemeRelationGraph", new ArrayList<>(List.of(edgeDefinition)));
                 System.out.println("Import optimization complete!");
+                importing.compareAndSet(true, false);
                 return new ResponseEntity<>("Import optimization complete", HttpStatus.OK);
             }
             catch(Exception e) {
