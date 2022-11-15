@@ -404,7 +404,6 @@ public class ImportController {
                                             //store expressions containing values which will be added
                                             RowConstructor rowConstructor = (RowConstructor) row;
                                             List<Expression> rowExpressionList = rowConstructor.getExprList().getExpressions();
-                                            //TODO: ObjectTag works differently: how to insert?
                                             if (isDocumentCollection) {
                                                 Expression keyExpression = rowExpressionList.get(0);
                                                 if (keyExpression instanceof LongValue) {
@@ -415,7 +414,7 @@ public class ImportController {
                                                 //if document collection, always store id, which will be first element
                                             } else {
                                                 if(currentCollectionName.equals("ObjectTag")) {
-                                                    //swap values for object type and tag id, to match swap of column definition
+                                                    //swap values for object type and tag id, to match swap of column definitions
                                                     Collections.swap(rowExpressionList, 2, 3);
                                                 }
                                                 // add _from and _to values, which will be second and third expressions
@@ -485,7 +484,7 @@ public class ImportController {
 
 
                                                 JsonSchemaDataType schemaDataType = JSONschemaAttributeType.get(colData.getColumnName());
-                                                // Add values
+                                                // Add values: for each type of SQL parsed value, treat according to schema datatype
                                                 if (schemaDataType.equals(JsonSchemaDataType.NULL)) {
                                                     expressionValues.add(null);
                                                 }
