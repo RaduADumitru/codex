@@ -200,4 +200,28 @@ public class ImportUtil {
         Objects.requireNonNull(deleteGraphResponse);
         deleteGraphResponse.close();
     }
+
+    public static void createIndex(String collection, List<String> fields) throws IOException {
+        String createIndexURL = ImportUtil.getInstance().getBaseRequestUrl() + "index?collection=" + collection;
+        ObjectNode createIndexRequestObject = ImportUtil.getInstance().getObjectMapper().createObjectNode();
+        createIndexRequestObject.put("type", "persistent");
+        createIndexRequestObject.put("unique", false);
+        ArrayNode fieldsArrayNode = createIndexRequestObject.putArray("fields");
+        for(String field : fields) {
+            fieldsArrayNode.add(field);
+        }
+        String jsonString = ImportUtil.getInstance().getObjectMapper().writeValueAsString(createIndexRequestObject);
+        RequestBody createIndexRequestBody = FormBody.create(jsonString, MediaType.get("application/json; charset=utf-8"));
+        Request createIndexRequest = new Request.Builder()
+                .url(createIndexURL)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .header("Authorization", ImportUtil.getInstance().getCredentials())
+                .post(createIndexRequestBody)
+                .build();
+        Call call = ImportUtil.getInstance().getOkHttpClient().newCall(createIndexRequest);
+        Response createIndexResponse = call.execute();
+        System.out.println("Created index for collection " + collection + ", fields " + fields + ": " + Objects.requireNonNull(createIndexResponse.body()).string());
+        createIndexResponse.close();
+    }
 }

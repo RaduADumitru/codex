@@ -724,6 +724,12 @@ public class ImportController {
                     }
                 }
                 System.out.println("Generated edge collections created!");
+
+                //Create index on Lexeme.formNoAccent, for better performancw
+
+                System.out.println("Creating index for collection Lexeme, field formNoAccent:");
+                ImportUtil.createIndex("Lexeme", List.of(new String[]{"formNoAccent"}));
+
                 importing.compareAndSet(true, false);
                 if(completeImport) {
                     optimizePartialImport(new OptimizeImportForm(pageCount));
