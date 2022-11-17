@@ -96,6 +96,7 @@ public class ImportController {
         }
         else {
             importing.compareAndSet(false, true);
+            System.out.println("Starting import...");
             try {
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
@@ -760,6 +761,7 @@ public class ImportController {
         }
         else {
             importing.compareAndSet(false, true);
+            System.out.println("Starting import optimization...");
             try {
                 String baseRequestUrl = "http://" + arangoDbHost + ":" + arangoDbPort + "/_db/dex/_api/";
                 ImportUtil.getInstance().setBaseRequestUrl(baseRequestUrl);
