@@ -34,7 +34,7 @@
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
                 <stringProp name="Argument.value">{&#xd;
 	&quot;word&quot;: &quot;${word}&quot;,&#xd;
-	&quot;wordform&quot;: &quot;noaccent&quot;,&#xd;
+	&quot;wordform&quot;: &quot;noaccent&quot;&#xd;
 }</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
