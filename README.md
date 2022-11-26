@@ -340,7 +340,7 @@ TESTS_PATH=${PWD}/tests && sudo docker run -v ${TESTS_PATH}:/workspace --net=hos
 ~~~
 Change the value of TEST to the desired test directory name, and set command line arguments starting with -J accordingly. Some tests also have additional optional command line parameters:
 
-* for import tests, `-Jpagecount` for the number of pages (default 10 - no pagination), 
+* for import tests, `-Jpagecount` for the number of pages (default 10), 
 * for KNN tests, `-Jneighborcount` for the number of neighbors (default 5),
 * for N-gram tests, `-Jngramsize` for the n-gram size (default 2)
 
