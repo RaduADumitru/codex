@@ -346,9 +346,11 @@ Change the value of TEST to the desired test directory name, and set command lin
 
 This will store an HTML summary of the test results in `tests/html/{testname}`, and a log file in `tests/logs/{testname}`.
 
+### Performance Sheet
+
 A set of test results can be found in a performance sheet [here](images/codex_performance_sheet.pdf). These tests were ran inside an Ubuntu virtual machine, with 16 GB of RAM and 4 CPUs. For the import tests, command line arguments were `-Jthreads=1 -Jrampup=1 -Jloops=10`, to run 10 consecutive imports, one at a time. For other tests, command line arguments were `-Jthreads=100 -Jrampup=10 -Jloops=1`; all other -J arguments were left with their default values.
 
-### Known issues/limitations
+## Known issues/limitations
 * `"java.io.IOException: Reached the end of the stream"` error: caused by an exceedingly large transaction surpassing [ArangoDB's stream transaction idle timeout](https://www.arangodb.com/docs/stable/transactions-stream-transactions.html). The default timeout is 60 seconds, and this is mitigated somewhat by having the server option `--transaction.streaming-idle-timeout` set to the maximum possible value of 120 seconds in the database's Dockerfile. Nevertheless, ArangoDB is not built with large transactions in mind, so it is recommended to split any large transactions into smaller ones, such as by increasing the `pagecount` when importing.
 * Searches for diminutives or augmentatives are not heavily supported; very few of these relationships exist in the original SQL database. The main focus for relation searches is on synonyms, and to a lesser extent antonyms.
 * Most lexemes in common use contain meanings extracted from their definitions, for easier presentation in a tree format; some in lesser use do not have meanings extracted separately, but they do have definitions extracted directly from dictionaries, presented in the website and stored in the SQL table `Definition`
